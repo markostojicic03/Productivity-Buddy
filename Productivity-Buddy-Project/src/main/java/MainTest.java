@@ -6,8 +6,4 @@ public class MainTest {
         //Stream<ProcessHandle> process = ProcessHandle.allProcesses();
         //process.forEach(p -> System.out.println("PID: " + p.pid() + " | Ime: " + p.info().command().orElse("Sistemski/Nepoznat")));
     }
-
-
-
-
 }

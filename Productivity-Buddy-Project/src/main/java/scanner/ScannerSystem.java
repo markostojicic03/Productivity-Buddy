@@ -1,7 +1,9 @@
 package scanner;
 
+import model.Category;
 import model.MyProcess;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,12 +22,25 @@ public class ScannerSystem extends RecursiveAction {
         //System.out.println("Inside ScannerSystem");
     }
 
-
+    // PROVERI KAKO DA SETUJEMO USAGE, ZA SADA JE HARDKODOVANO
     private void scanProcesses(List<ProcessHandle> processes){
-        System.out.println("Inside scanProcess");
+        for(ProcessHandle process : processes){
+            String name = process.info().command().orElse(null);
+            if(name == null) continue;
+            name = cutString(name);
+            if(data.containsKey(process.pid())) continue;
+            long startingTime = process.info().startInstant().orElse(Instant.now()).toEpochMilli();
+            MyProcess nw = new MyProcess(name, process.pid(), Category.OTHER, 1, 0.0, startingTime);
+            data.put(process.pid(), nw);
+        }
     }
 
+    private String cutString(String name){
+        int lastInd = name.lastIndexOf('\\');
+        return lastInd == -1 ? name : name.substring(lastInd + 1);
+    }
 
+    /// IZMENITI DA SE NE DELI UVEK NA PO 2 CUNKA NEGO DA MOZE I NA VISE (PROIZVOLJAN BROJ)
     @Override
     protected void compute() {
         int n = processes.size();
