@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-@Getter
 public class LoadConfigFile {
 
 
@@ -60,4 +59,19 @@ public class LoadConfigFile {
         return null;
     }
 
+    public int getIntervalProcess() {
+        return intervalProcess;
+    }
+
+    public List<String> getSnapshotTimes() {
+        return snapshotTimes;
+    }
+
+    public int getSnapshotInterval() {
+        return snapshotInterval;
+    }
+
+    public String getJsonFile() {
+        return jsonFile;
+    }
 }

@@ -2,29 +2,32 @@ package scanner;
 
 import model.Category;
 import model.MyProcess;
+import oshi.SystemInfo;
+import oshi.software.os.OSProcess;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.RecursiveTask;
 
 public class ScannerSystem extends RecursiveAction {
 
-    ConcurrentHashMap<Long, MyProcess> data; // ovde hocu da mi pid bude kljuc svakog mog procesa, ma da svakako i unutar procesa cuvam kao atribut pid
+    ConcurrentHashMap<Long, MyProcess> data;
     List<ProcessHandle> processes;
     ConcurrentHashMap<String, String> initialCategories;
+    SystemInfo systemInfo;
 
 
-    public ScannerSystem(ConcurrentHashMap<Long, MyProcess> data, List<ProcessHandle> processes, ConcurrentHashMap<String, String> initialCategories) {
+    public ScannerSystem(ConcurrentHashMap<Long, MyProcess> data, List<ProcessHandle> processes, ConcurrentHashMap<String, String> initialCategories, SystemInfo systemInfo) {
         this.data = data;
         this.processes = processes;
         this.initialCategories = initialCategories;
-        //System.out.println("Inside ScannerSystem");
+        this.systemInfo = systemInfo;
     }
 
-    // PROVERI KAKO DA SETUJEMO USAGE, ZA SADA JE HARDKODOVANO
     private void scanProcesses(List<ProcessHandle> processes){
         for(ProcessHandle process : processes){
             String name = process.info().command().orElse(null);
@@ -33,12 +36,29 @@ public class ScannerSystem extends RecursiveAction {
             long startingTime = process.info().startInstant().orElse(Instant.now()).toEpochMilli();
             String strCat = initialCategories.get(name);
             Category category = (initialCategories.containsKey(name)) ? (Category.valueOf(strCat)) : (Category.OTHER);
+
+
+            double numCpu = 0;
+            double numRam = 0;
+
+            try {
+                OSProcess processFromOshi = systemInfo.getOperatingSystem().getProcess((int) process.pid());
+
+                if(processFromOshi != null){
+                    numCpu = (processFromOshi.getProcessCpuLoadCumulative() * 100.0) / systemInfo.getHardware().getProcessor().getLogicalProcessorCount();
+                    numRam = (processFromOshi.getResidentSetSize() * 100.0) / systemInfo.getHardware().getMemory().getTotal();
+                }
+            } catch (Exception e) {
+            }
+
             if(data.containsKey(process.pid()) ){
                 data.get(process.pid()).setCategory(category);  // OVDE VRSIMO PROMENU AKO JE WATCHER UOCIO NESTO DRUGACIJE
+                data.get(process.pid()).setUsageCpuPercent(numCpu);
+                data.get(process.pid()).setUsageRamPercent(numRam);
                 continue;   /// TU CEMO VEROVATNO VRSITI PROMENU I ZA ALIJAS IME
             }
 
-            MyProcess nw = new MyProcess(name, process.pid(), category, 1, 0.0, startingTime);
+            MyProcess nw = new MyProcess(name, process.pid(), category, 1, numCpu, startingTime, numRam);
 
 
             data.put(process.pid(), nw);
@@ -68,8 +88,8 @@ public class ScannerSystem extends RecursiveAction {
         List<ProcessHandle> leftProcesses = processes.subList(0, mid);
         List<ProcessHandle> rightProcesses = processes.subList(mid, processes.size());
 
-        ScannerSystem left = new ScannerSystem(data, leftProcesses, initialCategories);
-        ScannerSystem right = new ScannerSystem(data, rightProcesses, initialCategories);
+        ScannerSystem left = new ScannerSystem(data, leftProcesses, initialCategories, systemInfo);
+        ScannerSystem right = new ScannerSystem(data, rightProcesses, initialCategories, systemInfo);
         left.fork();
         right.compute();
         left.join();

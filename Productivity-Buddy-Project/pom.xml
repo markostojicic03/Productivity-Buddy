@@ -26,6 +26,14 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- Source: https://mvnrepository.com/artifact/com.github.oshi/oshi-core -->
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>6.6.5</version>
+            <scope>compile</scope>
+        </dependency>
+
 
     </dependencies>
 

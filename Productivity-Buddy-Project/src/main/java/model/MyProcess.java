@@ -10,22 +10,23 @@ import java.util.Objects;
 @Getter
 @Setter
 public class MyProcess {
-    // za tipove treba staviti AtomicInteger i slicno, ali to promeniti kasnije !!!!
 
     private String name;
     private long pid;
     private Category category;
-    private long timeActive; // koliko dugo mi je aktivan proces
-    private double usage; // koliko mi iznosi usage od cpu-a za Details stranicu
-    private long startingTime; // kada smo pokrenuli proces
+    private long timeActive;
+    private double usageCpuPercent;
+    private double usageRamPercent;
+    private long startingTime;
 
-    public MyProcess(String name, long pid, Category category, long timeActive, double usage, long startingTime) {
+    public MyProcess(String name, long pid, Category category, long timeActive, double usageCpuPercent, long startingTime, double usageRamPercent) {
         this.name = name;
         this.pid = pid;
         this.category = category;
         this.timeActive = timeActive;
-        this.usage = usage;
+        this.usageCpuPercent = usageCpuPercent;
         this.startingTime = startingTime;
+        this.usageRamPercent = usageRamPercent;
     }
 
     @Override
