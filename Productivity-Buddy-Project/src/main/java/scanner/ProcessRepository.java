@@ -1,16 +1,21 @@
 package scanner;
 
-import config.FileConfig;
+import config.InitialJsonLoading;
+import config.LoadConfigFile;
 import config.WatchJson;
 import model.MyProcess;
 
-import java.io.File;
 import java.util.concurrent.*;
 
 public class ProcessRepository {
     public static void main(String[] args) {
-        FileConfig fileConfig = new FileConfig();
-        ConcurrentHashMap<String, String> initialCategories = fileConfig.initialScanProcessJsonFile();
+
+        LoadConfigFile loadConfigFile = LoadConfigFile.readConfigFile();
+
+
+
+        InitialJsonLoading initialJsonLoading = new InitialJsonLoading(loadConfigFile.getJsonFile());
+        ConcurrentHashMap<String, String> initialCategories = initialJsonLoading.initialScanProcessJsonFile();
         // KRECE EXECUTOR ZA POSMATRANJE JSON-A
 
         ExecutorService jsonWatch = Executors.newSingleThreadExecutor();
@@ -42,11 +47,11 @@ public class ProcessRepository {
                     else{
                         MyProcess myProcess = data.get(pid);
                         System.out.println(myProcess.getName() + " ;TimeActive: " + myProcess.getTimeActive() + " Category: " + myProcess.getCategory().name()); // TEST
-                        myProcess.setTimeActive(myProcess.getTimeActive() + 20);
+                        myProcess.setTimeActive(myProcess.getTimeActive() + loadConfigFile.getIntervalProcess() / 1000);
                     }
                 }
         },
-        1, 20, TimeUnit.SECONDS);
+        1, loadConfigFile.getIntervalProcess(), TimeUnit.MILLISECONDS);
 
     }
 

@@ -8,12 +8,13 @@ import java.io.FileReader;
 import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class FileConfig {
+public class InitialJsonLoading {
     private ConcurrentHashMap<String, String> specifyCategory; // key mi je name od procesa, a value category
+    private String jsonPath;
 
-
-    public FileConfig() {
+    public InitialJsonLoading(String jsonPath) {
         this.specifyCategory = new ConcurrentHashMap<>();
+        this.jsonPath = jsonPath;
     }
 
 
