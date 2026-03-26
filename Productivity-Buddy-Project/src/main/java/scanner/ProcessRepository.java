@@ -7,6 +7,13 @@ import config.WatchJson;
 import model.MyProcess;
 import oshi.SystemInfo;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.concurrent.*;
 
 public class ProcessRepository {
@@ -55,24 +62,51 @@ public class ProcessRepository {
 
         /* KRAJ - Executor za posmatranje procesa  */
 
-        /* POCETAK - Executor za analystic modul i pisanje u csv fajl  */
-        CategoryAnalytic categoryAnalytic = new CategoryAnalytic(data);
-        ScheduledExecutorService schedulerCsvAnalytic = Executors.newScheduledThreadPool(1);
-        ExecutorService executorCsvAnalytic = Executors.newSingleThreadExecutor();
-        schedulerCsvAnalytic.scheduleWithFixedDelay(() -> {
-            categoryAnalytic.sumTimeCategories();
-            // ovde cu da napravim string koji ce da predstavlja red u csv fajlu
-            executorCsvAnalytic.submit(() -> {
 
+        CategoryAnalytic categoryAnalytic = new CategoryAnalytic(data);
+
+        /* POCETAK - Executor za analystic modul i pisanje u csv fajl periodicno  */
+        ScheduledExecutorService schedulerCsvAnalyticPeriodic = Executors.newScheduledThreadPool(1);
+        ExecutorService executorCsvAnalytic = Executors.newSingleThreadExecutor();
+        schedulerCsvAnalyticPeriodic.scheduleWithFixedDelay(() -> {
+            categoryAnalytic.sumTimeCategories();
+            String writingText = categoryAnalytic.makeTextForCsv();
+            executorCsvAnalytic.submit(() -> {
+                try (BufferedWriter bw = new BufferedWriter(new FileWriter("probaPeriodic.csv", true))) {
+                    bw.write(writingText);
+                } catch (IOException e) {
+                    // error handling
+                }
             });
 
-
         }, 1, loadConfigFile.getSnapshotInterval(), TimeUnit.SECONDS);
+        /* KRAJ - Executor za analystic modul i pisanje u csv fajl periodicno  */
+        /* POCETAK - Executor za booked csv */
+        ScheduledExecutorService schedulerCsvAnalyticBooked = Executors.newScheduledThreadPool(1);
+        for(String strTime : loadConfigFile.getSnapshotTimes()){
+                LocalTime time = LocalTime.parse(strTime);
+                LocalDateTime dateTime = LocalDateTime.of(LocalDate.now(), time);
+                if(time.isBefore(LocalTime.now())){
+                    dateTime = dateTime.plusDays(1);
+                }
+
+                schedulerCsvAnalyticBooked.scheduleWithFixedDelay(() -> {
+                            categoryAnalytic.sumTimeCategories();
+                            String writingText = categoryAnalytic.makeTextForCsv();
+                            executorCsvAnalytic.submit(() -> {
+                                try (BufferedWriter bw = new BufferedWriter(new FileWriter("probaBooked.csv", true))) {
+                                    bw.write(writingText);
+                                } catch (IOException e) {
+                                    // error handling
+                                }
+                            });
+            }, Duration.between(LocalDateTime.now(), dateTime).toSeconds(), 24 * 60 * 60, TimeUnit.SECONDS);
+
+        }
+        /* KRAJ - Executor za booked csv*/
 
 
 
-
-        /* KRAJ - Executor za analystic modul i pisanje u csv fajl  */
 
 
 

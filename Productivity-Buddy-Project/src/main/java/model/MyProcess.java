@@ -18,6 +18,7 @@ public class MyProcess {
     private double usageCpuPercent;
     private double usageRamPercent;
     private long startingTime;
+    private String aliasName;
 
     public MyProcess(String name, long pid, Category category, long timeActive, double usageCpuPercent, long startingTime, double usageRamPercent) {
         this.name = name;
@@ -27,6 +28,7 @@ public class MyProcess {
         this.usageCpuPercent = usageCpuPercent;
         this.startingTime = startingTime;
         this.usageRamPercent = usageRamPercent;
+        this.aliasName = name; // HARDKODOVANO
     }
 
     @Override

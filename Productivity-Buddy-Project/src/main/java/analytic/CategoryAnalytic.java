@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import model.MyProcess;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -42,8 +43,18 @@ public class CategoryAnalytic {
     }
 
 
-    public List<String> retLinesCsv(){
-        return null;
+    public String retLinesCsv(MyProcess process){
+        return  LocalDateTime.now() +","+ process.getPid() + "," + process.getName() + "," + process.getUsageCpuPercent() + "," + process.getUsageRamPercent() + "," + process.getCategory() + "," + process.getAliasName();
     }
 
+
+    public String makeTextForCsv(){
+        StringBuilder strBuilder = new StringBuilder();
+        for(long pid : data.keySet()){
+            MyProcess process = data.get(pid);
+            strBuilder.append(this.retLinesCsv(process)).append("\n");
+        }
+
+        return strBuilder.toString();
+    }
 }
