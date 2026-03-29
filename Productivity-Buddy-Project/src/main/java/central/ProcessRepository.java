@@ -1,11 +1,13 @@
-package scanner;
+package central;
 
 import analytic.CategoryAnalytic;
 import config.InitialJsonLoading;
 import config.LoadConfigFile;
 import config.WatchJson;
+import lombok.Getter;
 import model.MyProcess;
 import oshi.SystemInfo;
+import scanner.ScannerSystem;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -16,10 +18,21 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.concurrent.*;
 
+@Getter
 public class ProcessRepository {
-    public static void main(String[] args) {
 
-        LoadConfigFile loadConfigFile = LoadConfigFile.readConfigFile();
+    private final LoadConfigFile loadConfigFile;
+    private final ConcurrentHashMap<Long, MyProcess> data;
+    private final CategoryAnalytic categoryAnalytic;
+
+    public ProcessRepository(LoadConfigFile loadConfigFile, ConcurrentHashMap<Long, MyProcess> data) {
+        this.loadConfigFile = loadConfigFile;
+        this.data = data;
+        this.categoryAnalytic = new CategoryAnalytic(data);
+    }
+
+    public void runProgramThreads(){
+
         InitialJsonLoading initialJsonLoading = new InitialJsonLoading(loadConfigFile.getJsonFile());
         ConcurrentHashMap<String, String> initialCategories = initialJsonLoading.initialScanProcessJsonFile();
 
@@ -39,31 +52,29 @@ public class ProcessRepository {
         });
         /* KRAJ - Executor za posmatranje json fajla  */
         /* POCETAK - Executor za posmatranje procesa  */
-        ConcurrentHashMap<Long, MyProcess> data = new ConcurrentHashMap<>(); // key -> pid
         ForkJoinPool forkJoinPool = new ForkJoinPool();
         ScheduledExecutorService schedulerProcess = Executors.newScheduledThreadPool(1);
         SystemInfo systemInfo = new SystemInfo();
 
         schedulerProcess.scheduleWithFixedDelay(()->{
-                forkJoinPool.invoke(new ScannerSystem(data, ProcessHandle.allProcesses().toList(), initialCategories, systemInfo));
-                for(long pid : data.keySet()) {
-                    boolean processOff = ProcessHandle.of(pid).isEmpty();
-                    if(processOff) {
-                        data.remove(pid);
+                    forkJoinPool.invoke(new ScannerSystem(data, ProcessHandle.allProcesses().toList(), initialCategories, systemInfo));
+                    for(long pid : data.keySet()) {
+                        boolean processOff = ProcessHandle.of(pid).isEmpty();
+                        if(processOff) {
+                            data.remove(pid);
+                        }
+                        else{
+                            MyProcess myProcess = data.get(pid);
+                            System.out.println(myProcess.getName() + " ;TimeActive: " + myProcess.getTimeActive() + " Category: " + myProcess.getCategory().name() + " CPU USAGE: " + myProcess.getUsageCpuPercent() + " RAM USAGE: "+ myProcess.getUsageRamPercent()); // TEST
+                            myProcess.setTimeActive(myProcess.getTimeActive() + loadConfigFile.getIntervalProcess() / 1000);
+                        }
                     }
-                    else{
-                        MyProcess myProcess = data.get(pid);
-                        System.out.println(myProcess.getName() + " ;TimeActive: " + myProcess.getTimeActive() + " Category: " + myProcess.getCategory().name() + " CPU USAGE: " + myProcess.getUsageCpuPercent() + " RAM USAGE: "+ myProcess.getUsageRamPercent()); // TEST
-                        myProcess.setTimeActive(myProcess.getTimeActive() + loadConfigFile.getIntervalProcess() / 1000);
-                    }
-                }
-        },
-        1, loadConfigFile.getIntervalProcess(), TimeUnit.MILLISECONDS);
+                },
+                1, loadConfigFile.getIntervalProcess(), TimeUnit.MILLISECONDS);
 
         /* KRAJ - Executor za posmatranje procesa  */
 
 
-        CategoryAnalytic categoryAnalytic = new CategoryAnalytic(data);
 
         /* POCETAK - Executor za analystic modul i pisanje u csv fajl periodicno  */
         ScheduledExecutorService schedulerCsvAnalyticPeriodic = Executors.newScheduledThreadPool(1);
@@ -84,33 +95,26 @@ public class ProcessRepository {
         /* POCETAK - Executor za booked csv */
         ScheduledExecutorService schedulerCsvAnalyticBooked = Executors.newScheduledThreadPool(1);
         for(String strTime : loadConfigFile.getSnapshotTimes()){
-                LocalTime time = LocalTime.parse(strTime);
-                LocalDateTime dateTime = LocalDateTime.of(LocalDate.now(), time);
-                if(time.isBefore(LocalTime.now())){
-                    dateTime = dateTime.plusDays(1);
-                }
+            LocalTime time = LocalTime.parse(strTime);
+            LocalDateTime dateTime = LocalDateTime.of(LocalDate.now(), time);
+            if(time.isBefore(LocalTime.now())){
+                dateTime = dateTime.plusDays(1);
+            }
 
-                schedulerCsvAnalyticBooked.scheduleWithFixedDelay(() -> {
-                            categoryAnalytic.sumTimeCategories();
-                            String writingText = categoryAnalytic.makeTextForCsv();
-                            executorCsvAnalytic.submit(() -> {
-                                try (BufferedWriter bw = new BufferedWriter(new FileWriter("probaBooked.csv", true))) {
-                                    bw.write(writingText);
-                                } catch (IOException e) {
-                                    // error handling
-                                }
-                            });
+            schedulerCsvAnalyticBooked.scheduleWithFixedDelay(() -> {
+                categoryAnalytic.sumTimeCategories();
+                String writingText = categoryAnalytic.makeTextForCsv();
+                executorCsvAnalytic.submit(() -> {
+                    try (BufferedWriter bw = new BufferedWriter(new FileWriter("probaBooked.csv", true))) {
+                        bw.write(writingText);
+                    } catch (IOException e) {
+                        // error handling
+                    }
+                });
             }, Duration.between(LocalDateTime.now(), dateTime).toSeconds(), 24 * 60 * 60, TimeUnit.SECONDS);
 
         }
         /* KRAJ - Executor za booked csv*/
-
-
-
-
-
-
-
 
     }
 
