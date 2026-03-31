@@ -1,5 +1,5 @@
 package model;
 
 public enum Category {
-    WORK, FUN, OTHER
+    WORK, FUN, OTHER, UNCATEGORIZED;
 }

@@ -2,7 +2,6 @@ package view;
 
 import analytic.CategoryAnalytic;
 import central.ProcessRepository;
-import com.sun.jna.platform.win32.Sspi;
 import config.LoadConfigFile;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -10,23 +9,21 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Side;
 import javafx.scene.Scene;
 import javafx.scene.chart.PieChart;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import model.Category;
 import model.MyProcess;
+import model.MyProcessDto;
 
-import javax.swing.*;
-import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GuiApplication extends Application {
+    private ProcessRepository processRepository;
 
     /** Ovde inicijalizujem osnovne box-ove */
     private final BorderPane borderPane = new BorderPane();
@@ -37,11 +34,19 @@ public class GuiApplication extends Application {
     private final PieChart pieChart = new PieChart();
     private final VBox vboxPieAndCategoryDetails = new VBox();
 
+
+    private final Label labelTotalTime = new Label();
+    private final Label labelRamUsagePer = new Label();
+    private final Label labelCpuUsagePer = new Label();
+    private final Label labelRamOrder= new Label();
+    private final Label labelCpuOrder = new Label();
+
+    private MyProcess selectedProcess = null;
     @Override
     public void start(Stage stage) throws Exception {
         LoadConfigFile loadConfigFile = LoadConfigFile.readConfigFile();
         ConcurrentHashMap<Long, MyProcess> data = new ConcurrentHashMap<>(); // key -> pid
-        ProcessRepository processRepository = new ProcessRepository(loadConfigFile, data);
+        processRepository = new ProcessRepository(loadConfigFile, data);
         processRepository.runProgramThreads();
 
         stage.setTitle("Process Management Application - Main Chart View");
@@ -68,7 +73,7 @@ public class GuiApplication extends Application {
         /** Tabela */
         TableColumn<MyProcess, String> colProcessName = new TableColumn<>("Process Name");
         TableColumn<MyProcess, String> colProcessCategory = new TableColumn<>("Process Category");
-        colProcessName.setCellValueFactory(new PropertyValueFactory<>("name"));
+        colProcessName.setCellValueFactory(new PropertyValueFactory<>("aliasName"));
         colProcessCategory.setCellValueFactory(new PropertyValueFactory<>("category"));
         colProcessName.setMinWidth(250.0);
         colProcessCategory.setMinWidth(250.0);
@@ -152,6 +157,20 @@ public class GuiApplication extends Application {
 
 
                 }
+
+                if (selectedProcess != null) {
+                    if(!selectedProcess.getFreezing())labelTotalTime.setText("Total Time: " + secondsToViewFormat(selectedProcess.getTimeActive()));
+                    else labelTotalTime.setText("Total Time: " + secondsToViewFormat(selectedProcess.getTimeActive()) + " -> Freez tracking: ON");
+
+                    labelRamUsagePer.setText("RAM USAGE " + String.format("%.2f", selectedProcess.getUsageRamPercent()) + "%");
+                    labelCpuUsagePer.setText("CPU USAGE " + String.format("%.2f", selectedProcess.getUsageCpuPercent()) + "%");
+                    labelRamOrder.setText("Order");
+                    labelCpuOrder.setText("Order");
+
+
+
+                }
+
             }
         };
         timer.start();
@@ -160,13 +179,13 @@ public class GuiApplication extends Application {
 
         tableView.getSelectionModel().selectedItemProperty().addListener((observable, oldSelection, newSelection) -> {
             if (newSelection != null) {
-                // newSelection je zapravo tvoj MyProcess objekat na koji je korisnik kliknuo!
-                // Ovde pozivamo logiku za menjanje desne strane ekrana
+                selectedProcess = newSelection;
+
                 hboxTableAndPie.getChildren().remove(vboxPieAndCategoryDetails);
                 VBox vboxProcessDetails = vboxProcessDetailsView(newSelection);
 
-                // 3. Ubacujemo novi desni deo pored tabele
                 hboxTableAndPie.getChildren().setAll(tableView, vboxProcessDetails);
+
 
             }
         });
@@ -213,19 +232,114 @@ public class GuiApplication extends Application {
 
         GridPane gridPaneDetails = new GridPane();
         Label labelProcessName = new Label(myProcess.getName());
-        Label labelTotalTime = new Label(secondsToViewFormat(myProcess.getStartingTime()));
-        Label labelRamUsagePer = new Label("RAM USAGE "+ myProcess.getUsageRamPercent()+"%  |");
-        Label labelCpuUsagePer = new Label("CPU USAGE "+ myProcess.getUsageCpuPercent()+"%  |");
-        Label labelRamOrder= new Label("Order");
-        Label labelCpuOrder = new Label("Order");
+
+
         Button btnKillProcess = new Button("Kill Process");
         Button btnChangeName = new Button("Change Name");
-        Button btnFreezeTracking = new Button("Freeze Tracking");
+        Button btnFreezeTracking = new Button((selectedProcess != null && selectedProcess.getFreezing()) ? ("Unfreeze tracking") : ("Freeze tracking"));
         Button btnChangeCategory = new Button("Change Category");
         btnKillProcess.setPrefSize(120.0, 30.0);
         btnChangeName.setPrefSize(120.0, 30.0);
         btnFreezeTracking.setPrefSize(120.0, 30.0);
         btnChangeCategory.setPrefSize(120.0, 30.0);
+
+
+        btnKillProcess.setOnAction(e -> {
+            if(selectedProcess != null){
+                processRepository.destroyProcess(selectedProcess.getPid());
+
+                hboxTableAndPie.getChildren().setAll(tableView, vboxPieAndCategoryDetails);
+                tableView.getSelectionModel().clearSelection();
+                selectedProcess = null;
+            }
+        });
+        btnFreezeTracking.setOnAction(e -> {
+            if (selectedProcess != null) {
+                boolean changeFlag = !selectedProcess.getFreezing();
+                selectedProcess.setFreezing(changeFlag);
+
+                MyProcessDto changeProcess = processRepository.getInitialCategories().get(selectedProcess.getName());
+                if (changeProcess != null) {
+                    changeProcess.setTrackingFreezed(changeFlag);
+                    processRepository.makeJsonChange();
+                }
+                btnFreezeTracking.setText(changeFlag ? "Unfreeze Tracking" : "Freeze Tracking");
+            }
+        });
+        btnChangeName.setOnAction(e -> {
+            if(selectedProcess != null){
+
+
+                TextInputDialog dialog = new TextInputDialog("Name");
+                dialog.setTitle("Change Process Name");
+                dialog.setHeaderText("Please enter a new name for process:");
+                dialog.setContentText("Name:");
+
+                Optional<String> result = dialog.showAndWait();
+                result.ifPresent(nwName -> {
+
+                    String originalName = selectedProcess.getName();
+
+
+                    processRepository.getData().values().forEach(p -> {
+                        if (p.getName().equals(originalName)) {
+                            p.setAliasName(nwName);
+                        }
+                    });
+
+                    MyProcessDto changeProcess = processRepository.getInitialCategories().get(originalName);
+                    if (changeProcess != null) {
+                        changeProcess.setAliasName(nwName);
+                        processRepository.makeJsonChange();
+                    }
+
+                    labelProcessName.setText(nwName);
+                });
+
+
+//                hboxTableAndPie.getChildren().setAll(tableView, vboxPieAndCategoryDetails);
+//                tableView.getSelectionModel().clearSelection();
+//                selectedProcess = null;
+            }
+        });
+        btnChangeCategory.setOnAction(e -> {
+            if(selectedProcess != null){
+
+
+                TextInputDialog dialog = new TextInputDialog("Category");
+                dialog.setTitle("Change Process Category");
+                dialog.setHeaderText("Please enter a new category for process:");
+                dialog.setContentText("Category:");
+
+                Optional<String> result = dialog.showAndWait();
+                result.ifPresent(nwCategory -> {
+
+                    Category category = selectedProcess.getCategory();
+
+
+                    processRepository.getData().values().forEach(p -> {
+                        if (p.getCategory().equals(category)) {
+                            p.setCategory(Category.valueOf(nwCategory.toUpperCase()));
+                        }
+                    });
+
+                    String originalName = selectedProcess.getName();
+                    MyProcessDto changeProcess = processRepository.getInitialCategories().get(originalName);
+                    if (changeProcess != null) {
+                        changeProcess.setCategory(nwCategory.toUpperCase());
+                        processRepository.makeJsonChange();
+                    }
+
+
+
+                });
+
+                hboxTableAndPie.getChildren().setAll(tableView, vboxPieAndCategoryDetails);
+                tableView.getSelectionModel().clearSelection();
+                selectedProcess = null;
+            }
+        });
+
 
 
         GridPane.setConstraints(labelProcessName, 0, 0, 2, 1, javafx.geometry.HPos.CENTER, javafx.geometry.VPos.CENTER);
@@ -281,6 +395,7 @@ public class GuiApplication extends Application {
         return vbox;
     }
 
+    public void killProcess(){}
 
 
 }

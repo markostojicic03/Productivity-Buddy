@@ -1,11 +1,15 @@
 package central;
 
 import analytic.CategoryAnalytic;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import config.InitialJsonLoading;
 import config.LoadConfigFile;
 import config.WatchJson;
 import lombok.Getter;
+import model.JsonListProcessDTO;
 import model.MyProcess;
+import model.MyProcessDto;
 import oshi.SystemInfo;
 import scanner.ScannerSystem;
 
@@ -24,17 +28,20 @@ public class ProcessRepository {
     private final LoadConfigFile loadConfigFile;
     private final ConcurrentHashMap<Long, MyProcess> data;
     private final CategoryAnalytic categoryAnalytic;
+    private final InitialJsonLoading initialJsonLoading;
+    private final ConcurrentHashMap<String, MyProcessDto> initialCategories;
 
     public ProcessRepository(LoadConfigFile loadConfigFile, ConcurrentHashMap<Long, MyProcess> data) {
         this.loadConfigFile = loadConfigFile;
         this.data = data;
         this.categoryAnalytic = new CategoryAnalytic(data);
+        this.initialJsonLoading = new InitialJsonLoading(loadConfigFile.getJsonFile());
+        this.initialCategories = initialJsonLoading.initialScanProcessJsonFile();
     }
 
     public void runProgramThreads(){
 
-        InitialJsonLoading initialJsonLoading = new InitialJsonLoading(loadConfigFile.getJsonFile());
-        ConcurrentHashMap<String, String> initialCategories = initialJsonLoading.initialScanProcessJsonFile();
+
 
 
         /* POCETAK - Executor za posmatranje json fajla  */
@@ -47,7 +54,7 @@ public class ProcessRepository {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                watchJson.jsonSpy();
+                watchJson.jsonSpy(data);
             }
         });
         /* KRAJ - Executor za posmatranje json fajla  */
@@ -66,7 +73,9 @@ public class ProcessRepository {
                         else{
                             MyProcess myProcess = data.get(pid);
                             System.out.println(myProcess.getName() + " ;TimeActive: " + myProcess.getTimeActive() + " Category: " + myProcess.getCategory().name() + " CPU USAGE: " + myProcess.getUsageCpuPercent() + " RAM USAGE: "+ myProcess.getUsageRamPercent()); // TEST
-                            myProcess.setTimeActive(myProcess.getTimeActive() + loadConfigFile.getIntervalProcess() / 1000);
+                            if(!myProcess.getFreezing()){
+                                myProcess.setTimeActive(myProcess.getTimeActive() + loadConfigFile.getIntervalProcess() / 1000);
+                            }
                         }
                     }
                 },
@@ -117,5 +126,31 @@ public class ProcessRepository {
         /* KRAJ - Executor za booked csv*/
 
     }
+
+    public void destroyProcess(long pid){
+        ProcessHandle.of(pid);
+        ProcessHandle process = ProcessHandle.of(pid).orElse(null);
+        if(process != null){
+            process.destroy();
+        }
+        this.data.remove(pid);
+    }
+    private final ExecutorService executorJsonChange = Executors.newSingleThreadExecutor();
+    public void makeJsonChange() {
+        executorJsonChange.submit(() -> {
+            try (FileWriter writer = new FileWriter(loadConfigFile.getJsonFile())) {
+
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+                JsonListProcessDTO wrapper = new JsonListProcessDTO();
+                wrapper.setProcesses(new java.util.ArrayList<>(initialCategories.values()));
+
+                gson.toJson(wrapper, writer);
+            } catch (IOException e) {
+                System.err.println("GRESKA PRI UPISU U JSON: " + e.getMessage());
+            }
+        });
+    }
+
 
 }

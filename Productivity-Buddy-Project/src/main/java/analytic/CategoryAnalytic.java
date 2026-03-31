@@ -36,7 +36,7 @@ public class CategoryAnalytic {
             else if(process.getCategory().toString().equals("FUN")){
                 this.funTime+= process.getTimeActive();
             }
-            else{
+            else if(process.getCategory().toString().equals("OTHER")){
                 this.otherTime+= process.getTimeActive();
             }
         }

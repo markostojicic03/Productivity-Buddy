@@ -1,7 +1,11 @@
 {
-  "chrome.exe": "WORK",
-  "Zoom.exe": "WORK",
-  "idea64.exe": "WORK",
-  "GitHubDesktop.exe": "WORK",
-  "java.exe": "WORK"
+  "processes": [
+    {
+      "originalName": "java.exe",
+      "aliasName": "IntelliJ IDEA",
+      "category": "FUN",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 4980
+    }
+  ]
 }

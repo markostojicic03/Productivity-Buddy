@@ -2,6 +2,7 @@ package scanner;
 
 import model.Category;
 import model.MyProcess;
+import model.MyProcessDto;
 import oshi.SystemInfo;
 import oshi.software.os.OSProcess;
 
@@ -17,11 +18,11 @@ public class ScannerSystem extends RecursiveAction {
 
     ConcurrentHashMap<Long, MyProcess> data;
     List<ProcessHandle> processes;
-    ConcurrentHashMap<String, String> initialCategories;
+    ConcurrentHashMap<String, MyProcessDto> initialCategories;
     SystemInfo systemInfo;
 
 
-    public ScannerSystem(ConcurrentHashMap<Long, MyProcess> data, List<ProcessHandle> processes, ConcurrentHashMap<String, String> initialCategories, SystemInfo systemInfo) {
+    public ScannerSystem(ConcurrentHashMap<Long, MyProcess> data, List<ProcessHandle> processes, ConcurrentHashMap<String, MyProcessDto> initialCategories, SystemInfo systemInfo) {
         this.data = data;
         this.processes = processes;
         this.initialCategories = initialCategories;
@@ -34,9 +35,23 @@ public class ScannerSystem extends RecursiveAction {
             if(name == null) continue;
             name = cutString(name);
             long startingTime = process.info().startInstant().orElse(Instant.now()).toEpochMilli();
-            String strCat = initialCategories.get(name);
-            Category category = (initialCategories.containsKey(name)) ? (Category.valueOf(strCat)) : (Category.OTHER);
 
+            // -------------------------
+            Category category = Category.UNCATEGORIZED;
+            String alias = name;
+            boolean isFreezed = false;
+
+            if (initialCategories.containsKey(name)) {
+                MyProcessDto dto = initialCategories.get(name);
+                try {
+                    category = Category.valueOf(dto.getCategory().toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    category = Category.OTHER;
+                }
+                alias = dto.getAliasName();
+                isFreezed = dto.isTrackingFreezed();
+            }
+            // ------------------------------------------------------------------
 
             double numCpu = 0;
             double numRam = 0;
@@ -52,13 +67,15 @@ public class ScannerSystem extends RecursiveAction {
             }
 
             if(data.containsKey(process.pid()) ){
-                data.get(process.pid()).setCategory(category);  // OVDE VRSIMO PROMENU AKO JE WATCHER UOCIO NESTO DRUGACIJE
+                //data.get(process.pid()).setCategory(category);
                 data.get(process.pid()).setUsageCpuPercent(numCpu);
                 data.get(process.pid()).setUsageRamPercent(numRam);
-                continue;   /// TU CEMO VEROVATNO VRSITI PROMENU I ZA ALIJAS IME
+                //data.get(process.pid()).setAliasName(alias);
+               // data.get(process.pid()).setFreezing(isFreezed);
+                continue;
             }
 
-            MyProcess nw = new MyProcess(name, process.pid(), category, 1, numCpu, startingTime, numRam);
+            MyProcess nw = new MyProcess(name, process.pid(), category, 1, numCpu, startingTime, numRam, alias, isFreezed);
 
 
             data.put(process.pid(), nw);

@@ -19,8 +19,9 @@ public class MyProcess {
     private double usageRamPercent;
     private long startingTime;
     private String aliasName;
+    private Boolean freezing;
 
-    public MyProcess(String name, long pid, Category category, long timeActive, double usageCpuPercent, long startingTime, double usageRamPercent) {
+    public MyProcess(String name, long pid, Category category, long timeActive, double usageCpuPercent, long startingTime, double usageRamPercent, String aliasName, Boolean freezing) {
         this.name = name;
         this.pid = pid;
         this.category = category;
@@ -28,7 +29,8 @@ public class MyProcess {
         this.usageCpuPercent = usageCpuPercent;
         this.startingTime = startingTime;
         this.usageRamPercent = usageRamPercent;
-        this.aliasName = name; // HARDKODOVANO
+        this.aliasName = aliasName;
+        this.freezing = freezing;
     }
 
     @Override
