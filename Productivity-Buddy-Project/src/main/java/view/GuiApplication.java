@@ -5,6 +5,7 @@ import central.ProcessRepository;
 import config.LoadConfigFile;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -19,6 +20,7 @@ import model.Category;
 import model.MyProcess;
 import model.MyProcessDto;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,11 +28,12 @@ public class GuiApplication extends Application {
     private ProcessRepository processRepository;
 
     /** Ovde inicijalizujem osnovne box-ove */
-    private final BorderPane borderPane = new BorderPane();
-    private final VBox vbox = new VBox();
+    private final BorderPane borderPaneRoot = new BorderPane();
+    private final VBox subRootOfBorderPane = new VBox();
     private final HBox hboxMenu = new HBox();
     private final HBox hboxTableAndPie = new HBox();
-    private final TableView<MyProcess> tableView = new TableView<MyProcess>();
+    private final TableView<MyProcess> tableViewMain = new TableView<MyProcess>();
+    private final TableView<MyProcess> tableViewCategory = new TableView<MyProcess>();
     private final PieChart pieChart = new PieChart();
     private final VBox vboxPieAndCategoryDetails = new VBox();
 
@@ -42,6 +45,13 @@ public class GuiApplication extends Application {
     private final Label labelCpuOrder = new Label();
 
     private MyProcess selectedProcess = null;
+    private final PieChart pieChartCategory = new PieChart();
+    private final Label labelCategoryTotalTime = new Label();
+    private Category currentViewedCategory = null;
+
+    private long lastChartUpdate = 0;
+
+
     @Override
     public void start(Stage stage) throws Exception {
         LoadConfigFile loadConfigFile = LoadConfigFile.readConfigFile();
@@ -61,12 +71,36 @@ public class GuiApplication extends Application {
         btnLoad.setPrefSize(76.0, 30.0);
         btnShutdown.setPrefSize(76.0, 30.0);
 
+        // U GuiApplication.java
+        btnSave.setOnAction(e -> {
+            // Pozivamo asinhroni upis
+            processRepository.saveCurrentStateAsync();
+
+            // Mali info prozor koji ne blokira rad GUI-ja
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Save State");
+            alert.setHeaderText(null);
+            alert.setContentText("Current application state has been saved to 'saved_state.json'!");
+            alert.show();
+        });
+
+        btnLoad.setOnAction(e -> {
+            processRepository.loadStateAsync();
+        });
+
+        btnShutdown.setOnAction(e -> {
+            processRepository.shutdownThreads();
+            Platform.exit();
+        });
+
+
+
 
         hboxMenu.getChildren().addAll(btnSave, btnLoad, btnShutdown);
         hboxMenu.setSpacing(5);
-        vbox.setSpacing(10);
-        hboxTableAndPie.getChildren().addAll(tableView);
-        HBox.setHgrow(tableView, Priority.ALWAYS);
+        subRootOfBorderPane.setSpacing(10);
+        hboxTableAndPie.getChildren().addAll(tableViewMain);
+        HBox.setHgrow(tableViewMain, Priority.ALWAYS);
 
 
 
@@ -77,10 +111,10 @@ public class GuiApplication extends Application {
         colProcessCategory.setCellValueFactory(new PropertyValueFactory<>("category"));
         colProcessName.setMinWidth(250.0);
         colProcessCategory.setMinWidth(250.0);
-        tableView.setMinHeight(700.0);
-        tableView.setMaxWidth(600.0);
+        tableViewMain.setMinHeight(700.0);
+        tableViewMain.setMaxWidth(600.0);
         ObservableList<MyProcess> fxTableList = FXCollections.observableArrayList();
-        tableView.setItems(fxTableList);
+        tableViewMain.setItems(fxTableList);
 
 
         /** Desna strana (od tabele pa na dalje) */
@@ -144,7 +178,6 @@ public class GuiApplication extends Application {
 
                     lastUpdate = now;
 
-
                     categoryAnalytic.sumTimeCategories();
 
                     chartWorkPart.setPieValue(categoryAnalytic.getWorkTime());
@@ -155,21 +188,53 @@ public class GuiApplication extends Application {
                     labelFunTime.setText(secondsToViewFormat(categoryAnalytic.getFunTime()));
                     labelOtherTime.setText(secondsToViewFormat(categoryAnalytic.getOtherTime()));
 
+                    //  Osvežavamo tabelu kategorije OVDE, jer ona mora da kuca svake sekunde
+                    if (currentViewedCategory != null) {
+                        List<MyProcess> filtered = categoryAnalytic.getProcessesForCategory(currentViewedCategory);
+                        tableViewCategory.setItems(FXCollections.observableArrayList(filtered));
 
+
+                        tableViewCategory.refresh();
+                    }
                 }
 
+// OSVEŽAVANJE GRAFIKONA (svakih 10 sekundi)
+                if (currentViewedCategory != null && (now - lastChartUpdate >= 5_000_000_000L)) {
+
+                    ObservableList<PieChart.Data> topTen = FXCollections.observableArrayList();
+                    categoryAnalytic.getTopTen(currentViewedCategory).forEach(p -> {
+                        topTen.add(new PieChart.Data(p.getAliasName(), p.getTimeActive()));
+                    });
+
+                    pieChartCategory.setData(topTen); // Osveži grafikon svakih 10s da ne "zaježi"
+
+                    long totalCatTime = 0;
+                    if (currentViewedCategory == Category.WORK) totalCatTime = categoryAnalytic.getWorkTime();
+                    else if (currentViewedCategory == Category.FUN) totalCatTime = categoryAnalytic.getFunTime();
+                    else totalCatTime = categoryAnalytic.getOtherTime();
+                    labelCategoryTotalTime.setText("Total time: " + secondsToViewFormat(totalCatTime));
+
+                    lastChartUpdate = now;
+                }
                 if (selectedProcess != null) {
                     if(!selectedProcess.getFreezing())labelTotalTime.setText("Total Time: " + secondsToViewFormat(selectedProcess.getTimeActive()));
                     else labelTotalTime.setText("Total Time: " + secondsToViewFormat(selectedProcess.getTimeActive()) + " -> Freez tracking: ON");
 
                     labelRamUsagePer.setText("RAM USAGE " + String.format("%.2f", selectedProcess.getUsageRamPercent()) + "%");
                     labelCpuUsagePer.setText("CPU USAGE " + String.format("%.2f", selectedProcess.getUsageCpuPercent()) + "%");
-                    labelRamOrder.setText("Order");
-                    labelCpuOrder.setText("Order");
 
 
+                    String orderData = categoryAnalytic.orderRamAndCpu(selectedProcess);
+                    String[] parts = orderData.split("-");
+
+                    if (parts.length == 2) { // rankovi za cpu i ram tjst order
+                        labelRamOrder.setText(parts[0]);
+                        labelCpuOrder.setText(parts[1]);
+                    }
 
                 }
+
+
 
             }
         };
@@ -177,41 +242,41 @@ public class GuiApplication extends Application {
         /** KRAJ DELA ZA OSVEZAVANJE EKRANA */
 
 
-        tableView.getSelectionModel().selectedItemProperty().addListener((observable, oldSelection, newSelection) -> {
+        tableViewMain.getSelectionModel().selectedItemProperty().addListener((observable, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 selectedProcess = newSelection;
 
                 hboxTableAndPie.getChildren().remove(vboxPieAndCategoryDetails);
                 VBox vboxProcessDetails = vboxProcessDetailsView(newSelection);
 
-                hboxTableAndPie.getChildren().setAll(tableView, vboxProcessDetails);
+                hboxTableAndPie.getChildren().setAll(tableViewMain, vboxProcessDetails);
 
 
             }
         });
 
         btnWorkDetails.setOnAction(e -> {
-            VBox categoryView = vboxCategoryDetailsView("WORK", hboxTableAndPie, vboxPieAndCategoryDetails);
-            hboxTableAndPie.getChildren().setAll(tableView, categoryView);
+            currentViewedCategory = Category.WORK;
+            subRootOfBorderPane.getChildren().setAll(hboxMenu, vboxCategoryDetailsView(Category.WORK));
         });
 
         btnFunDetails.setOnAction(e -> {
-            VBox categoryView = vboxCategoryDetailsView("FUN", hboxTableAndPie, vboxPieAndCategoryDetails);
-            hboxTableAndPie.getChildren().setAll(tableView, categoryView);
+            currentViewedCategory = Category.FUN;
+            subRootOfBorderPane.getChildren().setAll(hboxMenu, vboxCategoryDetailsView(Category.FUN));
         });
 
         btnOtherDetails.setOnAction(e -> {
-            VBox categoryView = vboxCategoryDetailsView("OTHER", hboxTableAndPie, vboxPieAndCategoryDetails);
-            hboxTableAndPie.getChildren().setAll(tableView, categoryView);
+            currentViewedCategory = Category.OTHER;
+            subRootOfBorderPane.getChildren().setAll(hboxMenu, vboxCategoryDetailsView(Category.OTHER));
         });
 
 
         vboxPieAndCategoryDetails.getChildren().addAll(pieChart, gridPaneDetailsCategory);
-        vbox.getChildren().addAll(hboxMenu, hboxTableAndPie);
+        subRootOfBorderPane.getChildren().addAll(hboxMenu, hboxTableAndPie);
         hboxTableAndPie.getChildren().addAll(vboxPieAndCategoryDetails);
-        tableView.getColumns().addAll(colProcessName, colProcessCategory);
-        borderPane.setCenter(vbox);
-        Scene scene = new Scene(borderPane, 1200, 800);
+        tableViewMain.getColumns().addAll(colProcessName, colProcessCategory);
+        borderPaneRoot.setCenter(subRootOfBorderPane);
+        Scene scene = new Scene(borderPaneRoot, 1200, 800);
         stage.setScene(scene);
         stage.show();
     }
@@ -225,9 +290,9 @@ public class GuiApplication extends Application {
         VBox vbox = new VBox();
         Button btnBack = new Button("<- Back to Main View");
         btnBack.setOnAction(event -> {
-            hboxTableAndPie.getChildren().setAll(tableView, vboxPieAndCategoryDetails);
+            hboxTableAndPie.getChildren().setAll(tableViewMain, vboxPieAndCategoryDetails);
 
-            tableView.getSelectionModel().clearSelection();
+            tableViewMain.getSelectionModel().clearSelection();
         });
 
         GridPane gridPaneDetails = new GridPane();
@@ -248,8 +313,8 @@ public class GuiApplication extends Application {
             if(selectedProcess != null){
                 processRepository.destroyProcess(selectedProcess.getPid());
 
-                hboxTableAndPie.getChildren().setAll(tableView, vboxPieAndCategoryDetails);
-                tableView.getSelectionModel().clearSelection();
+                hboxTableAndPie.getChildren().setAll(tableViewMain, vboxPieAndCategoryDetails);
+                tableViewMain.getSelectionModel().clearSelection();
                 selectedProcess = null;
             }
         });
@@ -316,14 +381,14 @@ public class GuiApplication extends Application {
 
                     Category category = selectedProcess.getCategory();
 
-
+                    String originalName = selectedProcess.getName();
                     processRepository.getData().values().forEach(p -> {
-                        if (p.getCategory().equals(category)) {
+                        if (p.getName().equals(originalName)) {
                             p.setCategory(Category.valueOf(nwCategory.toUpperCase()));
                         }
                     });
 
-                    String originalName = selectedProcess.getName();
+
                     MyProcessDto changeProcess = processRepository.getInitialCategories().get(originalName);
                     if (changeProcess != null) {
                         changeProcess.setCategory(nwCategory.toUpperCase());
@@ -334,8 +399,8 @@ public class GuiApplication extends Application {
 
                 });
 
-                hboxTableAndPie.getChildren().setAll(tableView, vboxPieAndCategoryDetails);
-                tableView.getSelectionModel().clearSelection();
+                hboxTableAndPie.getChildren().setAll(tableViewMain, vboxPieAndCategoryDetails);
+                tableViewMain.getSelectionModel().clearSelection();
                 selectedProcess = null;
             }
         });
@@ -369,33 +434,52 @@ public class GuiApplication extends Application {
         return vbox;
 
     }
-    private VBox vboxCategoryDetailsView(String categoryName, HBox hboxTableAndPie, VBox vboxPieAndCategoryDetails) {
-        VBox vbox = new VBox();
-        vbox.setPadding(new Insets(15));
-        HBox.setHgrow(vbox, Priority.ALWAYS);
 
-        // 1. Dugme za povratak (identično kao u Process Detail View)
-        Button btnBack = new Button("<- Back to Main View");
-        btnBack.setOnAction(event -> {
-            hboxTableAndPie.getChildren().setAll(hboxTableAndPie.getChildren().get(0), vboxPieAndCategoryDetails);
+    private HBox vboxCategoryDetailsView(Category category) {
+
+        HBox hboxRootForCategoryView = new HBox(20);
+        VBox tableLeft = new VBox(10);
+        VBox chartRight = new VBox(10);
+        Button btnBackButton = new Button("Back");
+
+        btnBackButton.setOnAction(event -> {
+            currentViewedCategory = null;
+            subRootOfBorderPane.getChildren().clear();
+            subRootOfBorderPane.getChildren().addAll(hboxMenu, hboxTableAndPie);
         });
 
-        // 2. Elementi za kategoriju
-        Label titleLabel = new Label("Category Details: " + categoryName);
-        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;"); // Malo da ga ulepšamo
+        TableColumn<MyProcess, String> colProcessName = new TableColumn<>("Process Name");
+        TableColumn<MyProcess, String> colRamCpu = new TableColumn<>("Ram & Cpu");
+        TableColumn<MyProcess, String> colTime = new TableColumn<>("Time");
 
-        // Za sada stavljam samo placeholder:
-        Label placeholder = new Label("Ovde će ići napredna statistika za " + categoryName);
+        colProcessName.setCellValueFactory(new PropertyValueFactory<>("aliasName"));
+        colRamCpu.setCellValueFactory(cellData -> {
+            MyProcess p = cellData.getValue();
+            String text = String.format("C: %.1f%% | R: %.1f%%", p.getUsageCpuPercent(), p.getUsageRamPercent());
+            return new javafx.beans.property.SimpleStringProperty(text);
+        });
 
-        VBox contentBox = new VBox(20, titleLabel, placeholder);
-        contentBox.setAlignment(Pos.CENTER);
-        VBox.setVgrow(contentBox, Priority.ALWAYS);
+        colTime.setCellValueFactory(cellData -> {
+            String formatted = secondsToViewFormat(cellData.getValue().getTimeActive());
+            return new javafx.beans.property.SimpleStringProperty(formatted);
+        });
 
-        vbox.getChildren().addAll(btnBack, contentBox);
-        return vbox;
+        colProcessName.setMinWidth(250.0);
+        colRamCpu.setMinWidth(200.0);
+        colTime.setMinWidth(150.0);
+
+        tableViewCategory.setMinHeight(700.0);
+        tableViewCategory.setMaxWidth(700.0);
+        tableViewCategory.getColumns().setAll(colProcessName, colRamCpu, colTime);
+
+        tableLeft.getChildren().addAll(new Label("Processes in " + category), tableViewCategory);
+        chartRight.getChildren().addAll(btnBackButton, new Label("Top 10 Usage"), pieChartCategory, labelCategoryTotalTime);
+        HBox.setHgrow(tableLeft, Priority.ALWAYS);
+
+        hboxRootForCategoryView.getChildren().addAll(tableLeft, chartRight);
+        return hboxRootForCategoryView;
     }
 
-    public void killProcess(){}
 
 
 }

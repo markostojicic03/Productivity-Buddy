@@ -3,6 +3,13 @@
     {
       "originalName": "java.exe",
       "aliasName": "IntelliJ IDEA",
+      "category": "Fun",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 4980
+    },
+    {
+      "originalName": "chrome.exe",
+      "aliasName": "KURAC",
       "category": "FUN",
       "isTrackingFreezed": false,
       "totalTimeSeconds": 4980
