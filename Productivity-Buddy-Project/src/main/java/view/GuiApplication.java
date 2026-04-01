@@ -15,11 +15,13 @@ import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import model.Category;
 import model.MyProcess;
 import model.MyProcessDto;
 
+import java.io.File;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,26 +73,34 @@ public class GuiApplication extends Application {
         btnLoad.setPrefSize(76.0, 30.0);
         btnShutdown.setPrefSize(76.0, 30.0);
 
-        // U GuiApplication.java
         btnSave.setOnAction(e -> {
-            // Pozivamo asinhroni upis
-            processRepository.saveCurrentStateAsync();
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save Process Configuration");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
 
-            // Mali info prozor koji ne blokira rad GUI-ja
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Save State");
-            alert.setHeaderText(null);
-            alert.setContentText("Current application state has been saved to 'saved_state.json'!");
-            alert.show();
+            File selectedFile = fileChooser.showSaveDialog(stage);
+
+            if (selectedFile != null) {
+                processRepository.saveToFileAsync(selectedFile);
+            }
         });
 
         btnLoad.setOnAction(e -> {
-            processRepository.loadStateAsync();
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Load Process Configuration");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+
+            File selectedFile = fileChooser.showOpenDialog(stage);
+
+            if (selectedFile != null) {
+                processRepository.loadFromFileAsync(selectedFile);
+            }
         });
 
         btnShutdown.setOnAction(e -> {
+            processRepository.saveStateSynchronouslyOnShutdown();
             processRepository.shutdownThreads();
-            Platform.exit();
+            Platform.exit(); // Zatvaranje aplikacije
         });
 
 

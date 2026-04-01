@@ -74,8 +74,10 @@ public class ScannerSystem extends RecursiveAction {
                // data.get(process.pid()).setFreezing(isFreezed);
                 continue;
             }
-
-            MyProcess nw = new MyProcess(name, process.pid(), category, 1, numCpu, startingTime, numRam, alias, isFreezed);
+            MyProcessDto myProcessDto = initialCategories.get(name);
+            long timeActivePlaceholder = 1;
+            if(myProcessDto != null) timeActivePlaceholder = myProcessDto.getTotalTimeSeconds();
+            MyProcess nw = new MyProcess(name, process.pid(), category, timeActivePlaceholder, numCpu, startingTime, numRam, alias, isFreezed);
 
 
             data.put(process.pid(), nw);

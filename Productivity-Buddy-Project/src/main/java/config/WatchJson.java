@@ -25,24 +25,25 @@ public class WatchJson {
             Gson gson = new Gson();
             JsonListProcessDTO listDto = gson.fromJson(reader, JsonListProcessDTO.class);
 
-            for (MyProcessDto noviDto : listDto.getProcesses()) {
-                String name = noviDto.getOriginalName();
-                MyProcessDto stariDto = startSpecifyCategory.get(name);
+            for (MyProcessDto myProcessDtoUpdateVal : listDto.getProcesses()) {
+                String name = myProcessDtoUpdateVal.getOriginalName();
+                MyProcessDto prevDto = startSpecifyCategory.get(name);
 
-                if (stariDto == null || !stariDto.equals(noviDto)) {
+                if (prevDto == null || !prevDto.equals(myProcessDtoUpdateVal)) {
 
 
-                    startSpecifyCategory.put(name, noviDto);
+                    startSpecifyCategory.put(name, myProcessDtoUpdateVal);
 
                     for (MyProcess liveProcess : data.values()) {
                         if (liveProcess.getName().equals(name)) {
-                            liveProcess.setFreezing(noviDto.isTrackingFreezed());
-                            liveProcess.setAliasName(noviDto.getAliasName());
+                            liveProcess.setFreezing(myProcessDtoUpdateVal.isTrackingFreezed());
+                            liveProcess.setAliasName(myProcessDtoUpdateVal.getAliasName());
                             try {
-                                liveProcess.setCategory(Category.valueOf(noviDto.getCategory().toUpperCase()));
+                                liveProcess.setCategory(Category.valueOf(myProcessDtoUpdateVal.getCategory().toUpperCase()));
                             } catch (Exception e) {
                                 liveProcess.setCategory(Category.UNCATEGORIZED);
                             }
+                            liveProcess.setTimeActive(myProcessDtoUpdateVal.getTotalTimeSeconds());
                         }
                     }
                 }

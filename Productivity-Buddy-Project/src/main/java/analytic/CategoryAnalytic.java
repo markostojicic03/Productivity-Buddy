@@ -31,17 +31,17 @@ public class CategoryAnalytic {
         this.funTime = 0;
         this.otherTime = 0;
 
-        for(long key: data.keySet()){
-            MyProcess process = data.get(key);
-            if(process.getCategory().toString().equals("WORK")){
-                this.workTime+= process.getTimeActive();
-            }
-            else if(process.getCategory().toString().equals("FUN")){
-                this.funTime+= process.getTimeActive();
-            }
-            else if(process.getCategory().toString().equals("OTHER")){
-                this.otherTime+= process.getTimeActive();
-            }
+        // koristimo grupisane liste, gde imamo samo JEDAN Chrome, JEDAN IntelliJ itd.
+        for(MyProcess p : getProcessesForCategory(Category.WORK)){
+            this.workTime += p.getTimeActive();
+        }
+
+        for(MyProcess p : getProcessesForCategory(Category.FUN)){
+            this.funTime += p.getTimeActive();
+        }
+
+        for(MyProcess p : getProcessesForCategory(Category.OTHER)){
+            this.otherTime += p.getTimeActive();
         }
     }
 
@@ -75,7 +75,9 @@ public class CategoryAnalytic {
                 if (groupedProcesses.containsKey(name)) {
 
                     MyProcess existing = groupedProcesses.get(name);
-                    existing.setTimeActive(existing.getTimeActive() + p.getTimeActive());
+
+                    existing.setTimeActive(Math.max(existing.getTimeActive(), p.getTimeActive()));
+
                     existing.setUsageCpuPercent(existing.getUsageCpuPercent() + p.getUsageCpuPercent());
                     existing.setUsageRamPercent(existing.getUsageRamPercent() + p.getUsageRamPercent());
                 } else {
