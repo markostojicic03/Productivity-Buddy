@@ -115,7 +115,7 @@ public class ProcessRepository {
                     }
                     bw.write(writingText);
                 } catch (IOException e) {
-                    // error handling
+
                 }
             });
 
@@ -141,7 +141,6 @@ public class ProcessRepository {
                         }
                         bw.write(writingText);
                     } catch (IOException e) {
-                        // error handling
                     }
                 });
             }, Duration.between(LocalDateTime.now(), dateTime).toSeconds(), 24 * 60 * 60, TimeUnit.SECONDS);
@@ -253,7 +252,6 @@ public class ProcessRepository {
         forkJoinPool.shutdown();
     }
     private String nameForSnap() {
-        // godina_mesec_dan_sat_minut_sekunda_stotinka
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss_SS");
         String res = "snapshot_" + LocalDateTime.now().format(formatter) + ".csv";
         return res;

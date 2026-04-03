@@ -13,6 +13,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
@@ -21,6 +23,7 @@ import model.Category;
 import model.MyProcess;
 import model.MyProcessDto;
 
+import java.awt.*;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +60,7 @@ public class GuiApplication extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         LoadConfigFile loadConfigFile = LoadConfigFile.readConfigFile();
-        ConcurrentHashMap<Long, MyProcess> data = new ConcurrentHashMap<>(); // key -> pid
+        ConcurrentHashMap<Long, MyProcess> data = new ConcurrentHashMap<>();
         processRepository = new ProcessRepository(loadConfigFile, data);
         processRepository.runProgramThreads();
         CategoryAnalytic categoryAnalytic = processRepository.getCategoryAnalytic();
@@ -68,10 +71,12 @@ public class GuiApplication extends Application {
         /** Menu i osnovne strukture  */
         Button btnSave = new Button("Save");
         Button btnLoad = new Button("Load");
+        Button btnRunNewTask = new Button("Run new Task");
         Button btnShutdown = new Button("Shutdown");
         btnSave.setPrefSize(76.0, 30.0);
         btnLoad.setPrefSize(76.0, 30.0);
         btnShutdown.setPrefSize(76.0, 30.0);
+        btnRunNewTask.setPrefSize(92.0, 30.0);
 
         btnSave.setOnAction(e -> {
             FileChooser fileChooser = new FileChooser();
@@ -100,13 +105,37 @@ public class GuiApplication extends Application {
         btnShutdown.setOnAction(e -> {
             processRepository.saveStateSynchronouslyOnShutdown();
             processRepository.shutdownThreads();
-            Platform.exit(); // Zatvaranje aplikacije
+            Platform.exit();
+        });
+        btnRunNewTask.setOnAction(e -> {
+            FileChooser chooseFile = new FileChooser();
+            chooseFile.setTitle("Create new task :)");
+
+            chooseFile.getExtensionFilters().add(new FileChooser.ExtensionFilter("Executables & Shortcuts", "*.exe", "*.bat", "*.cmd", "*.lnk"));
+            chooseFile.getExtensionFilters().add(new FileChooser.ExtensionFilter("All", "*.*"));
+
+            File pickedFileFromChooser = chooseFile.showOpenDialog(stage);
+
+            if (pickedFileFromChooser == null) {
+                return;
+            }
+
+            try {
+
+                if (Desktop.isDesktopSupported()) {
+                    Desktop.getDesktop().open(pickedFileFromChooser);
+                } else {
+                    Runtime.getRuntime().exec(pickedFileFromChooser.getAbsolutePath());
+                }
+            } catch (Exception ex) {
+                errorAlert("ERROR Execution blocked by system :(( " + ex.getMessage());
+            }
         });
 
 
 
 
-        hboxMenu.getChildren().addAll(btnSave, btnLoad, btnShutdown);
+        hboxMenu.getChildren().addAll(btnSave, btnLoad,btnRunNewTask,btnShutdown);
         hboxMenu.setSpacing(5);
         subRootOfBorderPane.setSpacing(10);
         hboxTableAndPie.getChildren().addAll(tableViewMain);
@@ -189,7 +218,7 @@ public class GuiApplication extends Application {
 
                     setLabelVals(labelWorkTime, labelFunTime, labelOtherTime, chartWorkPart, chartFunPart, chartOtherPart, categoryAnalytic);
 
-                    //  Osvežavamo tabelu kategorije OVDE, jer ona mora da kuca svake sekunde
+
                     if (currentViewedCategory != null) {
                         List<MyProcess> filtered = categoryAnalytic.getProcessesForCategory(currentViewedCategory);
                         tableViewCategory.setItems(FXCollections.observableArrayList(filtered));
@@ -198,7 +227,7 @@ public class GuiApplication extends Application {
                     }
                 }
 
-                // OSVEŽAVANJE GRAFIKONA (svakih 10 sekundi)
+
                 if (currentViewedCategory != null && (now - lastChartUpdate >= 5_000_000_000L)) {
 
                     ObservableList<PieChart.Data> topTen = FXCollections.observableArrayList();
@@ -258,17 +287,17 @@ public class GuiApplication extends Application {
 
         btnWorkDetails.setOnAction(e -> {
             currentViewedCategory = Category.WORK;
-            subRootOfBorderPane.getChildren().setAll(hboxMenu, vboxCategoryDetailsView(Category.WORK));
+            subRootOfBorderPane.getChildren().setAll(hboxMenu, hboxCategoryDetailsView(Category.WORK));
         });
 
         btnFunDetails.setOnAction(e -> {
             currentViewedCategory = Category.FUN;
-            subRootOfBorderPane.getChildren().setAll(hboxMenu, vboxCategoryDetailsView(Category.FUN));
+            subRootOfBorderPane.getChildren().setAll(hboxMenu, hboxCategoryDetailsView(Category.FUN));
         });
 
         btnOtherDetails.setOnAction(e -> {
             currentViewedCategory = Category.OTHER;
-            subRootOfBorderPane.getChildren().setAll(hboxMenu, vboxCategoryDetailsView(Category.OTHER));
+            subRootOfBorderPane.getChildren().setAll(hboxMenu, hboxCategoryDetailsView(Category.OTHER));
         });
 
         stage.setOnCloseRequest(event -> {
@@ -368,9 +397,6 @@ public class GuiApplication extends Application {
                 });
 
 
-//                hboxTableAndPie.getChildren().setAll(tableView, vboxPieAndCategoryDetails);
-//                tableView.getSelectionModel().clearSelection();
-//                selectedProcess = null;
             }
         });
         btnChangeCategory.setOnAction(e -> {
@@ -441,7 +467,7 @@ public class GuiApplication extends Application {
 
     }
 
-    private HBox vboxCategoryDetailsView(Category category) {
+    private HBox hboxCategoryDetailsView(Category category) {
 
         HBox hboxRootForCategoryView = new HBox(20);
         VBox tableLeft = new VBox(10);
@@ -479,7 +505,7 @@ public class GuiApplication extends Application {
         tableViewCategory.getColumns().setAll(colProcessName, colRamCpu, colTime);
 
         tableLeft.getChildren().addAll(new Label("Processes in " + category), tableViewCategory);
-        chartRight.getChildren().addAll(btnBackButton, new Label("Top 10 Usage"), pieChartCategory, labelCategoryTotalTime);
+        chartRight.getChildren().addAll(btnBackButton, new Label("Top 10 Usage in category"), pieChartCategory, labelCategoryTotalTime);
         HBox.setHgrow(tableLeft, Priority.ALWAYS);
 
         hboxRootForCategoryView.getChildren().addAll(tableLeft, chartRight);
@@ -495,7 +521,9 @@ public class GuiApplication extends Application {
         labelFunTime.setText(secondsToViewFormat(categoryAnalytic.getFunTime()));
         labelOtherTime.setText(secondsToViewFormat(categoryAnalytic.getOtherTime()));
     }
-
+    private void errorAlert(String msg) {
+        new Alert(Alert.AlertType.ERROR, msg).showAndWait();
+    }
 
 
 }

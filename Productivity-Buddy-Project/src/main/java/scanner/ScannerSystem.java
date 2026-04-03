@@ -30,6 +30,8 @@ public class ScannerSystem extends RecursiveAction {
     }
 
     private void scanProcesses(List<ProcessHandle> processes){
+        long wholeRamMemory = systemInfo.getHardware().getMemory().getTotal();
+        int numOfLogicalUnits = systemInfo.getHardware().getProcessor().getLogicalProcessorCount();
         for(ProcessHandle process : processes){
             String name = process.info().command().orElse(null);
             if(name == null) continue;
@@ -60,18 +62,15 @@ public class ScannerSystem extends RecursiveAction {
                 OSProcess processFromOshi = systemInfo.getOperatingSystem().getProcess((int) process.pid());
 
                 if(processFromOshi != null){
-                    numCpu = (processFromOshi.getProcessCpuLoadCumulative() * 100.0) / systemInfo.getHardware().getProcessor().getLogicalProcessorCount();
-                    numRam = (processFromOshi.getResidentSetSize() * 100.0) / systemInfo.getHardware().getMemory().getTotal();
+                    numCpu = (processFromOshi.getProcessCpuLoadCumulative() * 100.0) / numOfLogicalUnits;
+                    numRam = (processFromOshi.getResidentSetSize() * 100.0) / wholeRamMemory;
                 }
             } catch (Exception e) {
             }
 
             if(data.containsKey(process.pid()) ){
-                //data.get(process.pid()).setCategory(category);
                 data.get(process.pid()).setUsageCpuPercent(numCpu);
                 data.get(process.pid()).setUsageRamPercent(numRam);
-                //data.get(process.pid()).setAliasName(alias);
-               // data.get(process.pid()).setFreezing(isFreezed);
                 continue;
             }
             MyProcessDto myProcessDto = initialCategories.get(name);
