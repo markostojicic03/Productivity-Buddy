@@ -26,7 +26,8 @@ public class LoadConfigFile {
     }
 
     /**
-     * Izvor za citanje iz properties fajla: https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Properties.html
+     * Ugledao sam se na sledeci izvor prilikom kreiranja funkcije za citanje iz config fajla.
+     * Izvor: https://www.baeldung.com/java-properties
      * */
     public static LoadConfigFile readConfigFile() {
         if(instanceLoadConfig != null) return instanceLoadConfig;
