@@ -3,79 +3,79 @@
     {
       "originalName": "taskhostw.exe",
       "aliasName": "taskhostw.exe",
-      "category": "UNCATEGORIZED",
+      "category": "OTHER",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 2513
+      "totalTimeSeconds": 2583
     },
     {
       "originalName": "OneDrive.Sync.Service.exe",
       "aliasName": "OneDrive.Sync.Service.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "java.exe",
       "aliasName": "java.exe",
       "category": "OTHER",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "dllhost.exe",
       "aliasName": "dllhost.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "Everything.exe",
       "aliasName": "Everything.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "SDXHelper.exe",
       "aliasName": "SDXHelper.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "Notion.exe",
       "aliasName": "Notion.exe",
-      "category": "UNCATEGORIZED",
+      "category": "WORK",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "zWebview2Agent.exe",
       "aliasName": "zWebview2Agent.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1663
+      "totalTimeSeconds": 1733
     },
     {
       "originalName": "explorer.exe",
       "aliasName": "explorer.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "LogiAiPromptBuilder.exe",
       "aliasName": "LogiAiPromptBuilder.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "msedgewebview2.exe",
       "aliasName": "msedgewebview2.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "backgroundTaskHost.exe",
@@ -89,14 +89,14 @@
       "aliasName": "FnHotkeyUtility.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "unsecapp.exe",
       "aliasName": "unsecapp.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "FileCoAuth.exe",
@@ -110,28 +110,28 @@
       "aliasName": "SystemSettings.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 963
+      "totalTimeSeconds": 1073
     },
     {
       "originalName": "SecurityHealthSystray.exe",
       "aliasName": "SecurityHealthSystray.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "splwow64.exe",
       "aliasName": "splwow64.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 161
+      "totalTimeSeconds": 231
     },
     {
       "originalName": "ShellExperienceHost.exe",
       "aliasName": "ShellExperienceHost.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "claude.exe",
@@ -145,42 +145,42 @@
       "aliasName": "CalculatorApp.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "LockApp.exe",
       "aliasName": "LockApp.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "StartMenuExperienceHost.exe",
       "aliasName": "StartMenuExperienceHost.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "idea64.exe",
       "aliasName": "idea64.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "UserOOBEBroker.exe",
       "aliasName": "UserOOBEBroker.exe",
-      "category": "UNCATEGORIZED",
+      "category": "FUN",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "RuntimeBroker.exe",
       "aliasName": "RuntimeBroker.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "Time.exe",
@@ -194,119 +194,119 @@
       "aliasName": "SystemSettingsBroker.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "RtkAudUService64.exe",
       "aliasName": "RtkAudUService64.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "Zoom.exe",
       "aliasName": "Zoom.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1593
+      "totalTimeSeconds": 1663
     },
     {
       "originalName": "chrome.exe",
       "aliasName": "chrome.exe",
       "category": "FUN",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "ApplicationFrameHost.exe",
       "aliasName": "ApplicationFrameHost.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "SearchApp.exe",
       "aliasName": "SearchApp.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "GitHubDesktop.exe",
       "aliasName": "GitHubDesktop.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "logioptionsplus_agent.exe",
       "aliasName": "logioptionsplus_agent.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "full-line-inference.exe",
       "aliasName": "full-line-inference.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "sihost.exe",
       "aliasName": "sihost.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "LogiPluginService.exe",
       "aliasName": "LogiPluginService.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "msedge.exe",
       "aliasName": "msedge.exe",
-      "category": "UNCATEGORIZED",
+      "category": "FUN",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "LogiPluginServiceExt.exe",
       "aliasName": "LogiPluginServiceExt.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "fsnotifier.exe",
       "aliasName": "fsnotifier.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "conhost.exe",
       "aliasName": "conhost.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "TextInputHost.exe",
       "aliasName": "TextInputHost.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     },
     {
       "originalName": "svchost.exe",
       "aliasName": "svchost.exe",
       "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 1673
+      "totalTimeSeconds": 1743
     }
   ]
 }
