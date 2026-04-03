@@ -1,11 +1,291 @@
 {
   "processes": [
     {
-      "originalName": "chrome.exe",
-      "aliasName": "HROMIC",
-      "category": "WORK",
+      "originalName": "taskhostw.exe",
+      "aliasName": "taskhostw.exe",
+      "category": "UNCATEGORIZED",
       "isTrackingFreezed": false,
-      "totalTimeSeconds": 10920
+      "totalTimeSeconds": 1513
+    },
+    {
+      "originalName": "OneDrive.Sync.Service.exe",
+      "aliasName": "OneDrive.Sync.Service.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "java.exe",
+      "aliasName": "java.exe",
+      "category": "OTHER",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "dllhost.exe",
+      "aliasName": "dllhost.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "Everything.exe",
+      "aliasName": "Everything.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "SDXHelper.exe",
+      "aliasName": "SDXHelper.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "Notion.exe",
+      "aliasName": "Notion.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "zWebview2Agent.exe",
+      "aliasName": "zWebview2Agent.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 663
+    },
+    {
+      "originalName": "explorer.exe",
+      "aliasName": "explorer.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "LogiAiPromptBuilder.exe",
+      "aliasName": "LogiAiPromptBuilder.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "msedgewebview2.exe",
+      "aliasName": "msedgewebview2.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "backgroundTaskHost.exe",
+      "aliasName": "backgroundTaskHost.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 41
+    },
+    {
+      "originalName": "FnHotkeyUtility.exe",
+      "aliasName": "FnHotkeyUtility.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "unsecapp.exe",
+      "aliasName": "unsecapp.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "SystemSettings.exe",
+      "aliasName": "SystemSettings.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "SecurityHealthSystray.exe",
+      "aliasName": "SecurityHealthSystray.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "ShellExperienceHost.exe",
+      "aliasName": "ShellExperienceHost.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "CalculatorApp.exe",
+      "aliasName": "CalculatorApp.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "LockApp.exe",
+      "aliasName": "LockApp.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "StartMenuExperienceHost.exe",
+      "aliasName": "StartMenuExperienceHost.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "idea64.exe",
+      "aliasName": "idea64.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "UserOOBEBroker.exe",
+      "aliasName": "UserOOBEBroker.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "RuntimeBroker.exe",
+      "aliasName": "RuntimeBroker.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "Time.exe",
+      "aliasName": "Time.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "SystemSettingsBroker.exe",
+      "aliasName": "SystemSettingsBroker.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "RtkAudUService64.exe",
+      "aliasName": "RtkAudUService64.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "Zoom.exe",
+      "aliasName": "Zoom.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 593
+    },
+    {
+      "originalName": "chrome.exe",
+      "aliasName": "chrome.exe",
+      "category": "FUN",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "ApplicationFrameHost.exe",
+      "aliasName": "ApplicationFrameHost.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "SearchApp.exe",
+      "aliasName": "SearchApp.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "GitHubDesktop.exe",
+      "aliasName": "GitHubDesktop.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "logioptionsplus_agent.exe",
+      "aliasName": "logioptionsplus_agent.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "full-line-inference.exe",
+      "aliasName": "full-line-inference.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "sihost.exe",
+      "aliasName": "sihost.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "LogiPluginService.exe",
+      "aliasName": "LogiPluginService.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "msedge.exe",
+      "aliasName": "msedge.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "LogiPluginServiceExt.exe",
+      "aliasName": "LogiPluginServiceExt.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "fsnotifier.exe",
+      "aliasName": "fsnotifier.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "conhost.exe",
+      "aliasName": "conhost.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "TextInputHost.exe",
+      "aliasName": "TextInputHost.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
+    },
+    {
+      "originalName": "svchost.exe",
+      "aliasName": "svchost.exe",
+      "category": "UNCATEGORIZED",
+      "isTrackingFreezed": false,
+      "totalTimeSeconds": 673
     }
   ]
 }

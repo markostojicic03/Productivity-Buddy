@@ -60,7 +60,7 @@ public class GuiApplication extends Application {
         ConcurrentHashMap<Long, MyProcess> data = new ConcurrentHashMap<>(); // key -> pid
         processRepository = new ProcessRepository(loadConfigFile, data);
         processRepository.runProgramThreads();
-
+        CategoryAnalytic categoryAnalytic = processRepository.getCategoryAnalytic();
         stage.setTitle("Process Management Application - Main Chart View");
 
 
@@ -93,7 +93,7 @@ public class GuiApplication extends Application {
             File selectedFile = fileChooser.showOpenDialog(stage);
 
             if (selectedFile != null) {
-                processRepository.loadFromFileAsync(selectedFile);
+                processRepository.loadChosenFileFromGui(selectedFile);
             }
         });
 
@@ -174,49 +174,40 @@ public class GuiApplication extends Application {
 
 
         /** DEO ZA OSVEZAVANJE EKRANA  */
-        CategoryAnalytic categoryAnalytic = processRepository.getCategoryAnalytic();
         AnimationTimer timer = new AnimationTimer() {
-            private long lastUpdate = 0;
+            private long prevUpdate = 0;
 
             @Override
             public void handle(long now) {
 
-                if (now - lastUpdate >= loadConfigFile.getIntervalProcess() * 1_000_000) {
+                if (now - prevUpdate >= loadConfigFile.getIntervalProcess() * 1_000_000) {
 
                     fxTableList.clear();
                     fxTableList.addAll(data.values());
-
-                    lastUpdate = now;
-
+                    prevUpdate = now;
                     categoryAnalytic.sumTimeCategories();
 
-                    chartWorkPart.setPieValue(categoryAnalytic.getWorkTime());
-                    chartFunPart.setPieValue(categoryAnalytic.getFunTime());
-                    chartOtherPart.setPieValue(categoryAnalytic.getOtherTime());
-
-                    labelWorkTime.setText(secondsToViewFormat(categoryAnalytic.getWorkTime()));
-                    labelFunTime.setText(secondsToViewFormat(categoryAnalytic.getFunTime()));
-                    labelOtherTime.setText(secondsToViewFormat(categoryAnalytic.getOtherTime()));
+                    setLabelVals(labelWorkTime, labelFunTime, labelOtherTime, chartWorkPart, chartFunPart, chartOtherPart, categoryAnalytic);
 
                     //  Osvežavamo tabelu kategorije OVDE, jer ona mora da kuca svake sekunde
                     if (currentViewedCategory != null) {
                         List<MyProcess> filtered = categoryAnalytic.getProcessesForCategory(currentViewedCategory);
                         tableViewCategory.setItems(FXCollections.observableArrayList(filtered));
 
-
                         tableViewCategory.refresh();
                     }
                 }
 
-// OSVEŽAVANJE GRAFIKONA (svakih 10 sekundi)
+                // OSVEŽAVANJE GRAFIKONA (svakih 10 sekundi)
                 if (currentViewedCategory != null && (now - lastChartUpdate >= 5_000_000_000L)) {
 
                     ObservableList<PieChart.Data> topTen = FXCollections.observableArrayList();
+
                     categoryAnalytic.getTopTen(currentViewedCategory).forEach(p -> {
                         topTen.add(new PieChart.Data(p.getAliasName(), p.getTimeActive()));
                     });
 
-                    pieChartCategory.setData(topTen); // Osveži grafikon svakih 10s da ne "zaježi"
+                    pieChartCategory.setData(topTen);
 
                     long totalCatTime = 0;
                     if (currentViewedCategory == Category.WORK) totalCatTime = categoryAnalytic.getWorkTime();
@@ -237,7 +228,7 @@ public class GuiApplication extends Application {
                     String orderData = categoryAnalytic.orderRamAndCpu(selectedProcess);
                     String[] parts = orderData.split("-");
 
-                    if (parts.length == 2) { // rankovi za cpu i ram tjst order
+                    if (parts.length == 2) {
                         labelRamOrder.setText(parts[0]);
                         labelCpuOrder.setText(parts[1]);
                     }
@@ -280,7 +271,12 @@ public class GuiApplication extends Application {
             subRootOfBorderPane.getChildren().setAll(hboxMenu, vboxCategoryDetailsView(Category.OTHER));
         });
 
-
+        stage.setOnCloseRequest(event -> {
+            event.consume();
+            processRepository.saveStateSynchronouslyOnShutdown();
+            processRepository.shutdownThreads();
+            Platform.exit();
+        });
         vboxPieAndCategoryDetails.getChildren().addAll(pieChart, gridPaneDetailsCategory);
         subRootOfBorderPane.getChildren().addAll(hboxMenu, hboxTableAndPie);
         hboxTableAndPie.getChildren().addAll(vboxPieAndCategoryDetails);
@@ -465,7 +461,7 @@ public class GuiApplication extends Application {
         colProcessName.setCellValueFactory(new PropertyValueFactory<>("aliasName"));
         colRamCpu.setCellValueFactory(cellData -> {
             MyProcess p = cellData.getValue();
-            String text = String.format("C: %.1f%% | R: %.1f%%", p.getUsageCpuPercent(), p.getUsageRamPercent());
+            String text = String.format("CPU: %.1f%% | RAM: %.1f%%", p.getUsageCpuPercent(), p.getUsageRamPercent());
             return new javafx.beans.property.SimpleStringProperty(text);
         });
 
@@ -474,12 +470,12 @@ public class GuiApplication extends Application {
             return new javafx.beans.property.SimpleStringProperty(formatted);
         });
 
-        colProcessName.setMinWidth(250.0);
-        colRamCpu.setMinWidth(200.0);
-        colTime.setMinWidth(150.0);
+        colProcessName.setMinWidth(255.0);
+        colRamCpu.setMinWidth(205.0);
+        colTime.setMinWidth(155.0);
 
-        tableViewCategory.setMinHeight(700.0);
-        tableViewCategory.setMaxWidth(700.0);
+        tableViewCategory.setMinHeight(703.0);
+        tableViewCategory.setMaxWidth(703.0);
         tableViewCategory.getColumns().setAll(colProcessName, colRamCpu, colTime);
 
         tableLeft.getChildren().addAll(new Label("Processes in " + category), tableViewCategory);
@@ -488,6 +484,16 @@ public class GuiApplication extends Application {
 
         hboxRootForCategoryView.getChildren().addAll(tableLeft, chartRight);
         return hboxRootForCategoryView;
+    }
+
+    private void setLabelVals(Label labelWorkTime, Label labelFunTime, Label labelOtherTime,PieChart.Data chartWorkPart, PieChart.Data chartFunPart, PieChart.Data chartOtherPart, CategoryAnalytic categoryAnalytic){
+        chartWorkPart.setPieValue(categoryAnalytic.getWorkTime());
+        chartFunPart.setPieValue(categoryAnalytic.getFunTime());
+        chartOtherPart.setPieValue(categoryAnalytic.getOtherTime());
+
+        labelWorkTime.setText(secondsToViewFormat(categoryAnalytic.getWorkTime()));
+        labelFunTime.setText(secondsToViewFormat(categoryAnalytic.getFunTime()));
+        labelOtherTime.setText(secondsToViewFormat(categoryAnalytic.getOtherTime()));
     }
 
 

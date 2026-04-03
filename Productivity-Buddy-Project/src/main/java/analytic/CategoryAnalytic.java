@@ -4,13 +4,11 @@ import lombok.Getter;
 import lombok.Setter;
 import model.Category;
 import model.MyProcess;
+import model.MyProcessDto;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Getter
 @Setter
@@ -25,13 +23,13 @@ public class CategoryAnalytic {
         this.data = data;
     }
 
-    public void sumTimeCategories(){
+    public synchronized void sumTimeCategories(){
 
         this.workTime = 0;
         this.funTime = 0;
         this.otherTime = 0;
 
-        // koristimo grupisane liste, gde imamo samo JEDAN Chrome, JEDAN IntelliJ itd.
+
         for(MyProcess p : getProcessesForCategory(Category.WORK)){
             this.workTime += p.getTimeActive();
         }
@@ -55,6 +53,9 @@ public class CategoryAnalytic {
         StringBuilder strBuilder = new StringBuilder();
         for(long pid : data.keySet()){
             MyProcess process = data.get(pid);
+            if (process == null) {
+                continue;
+            }
             strBuilder.append(this.retLinesCsv(process)).append("\n");
         }
 
@@ -101,18 +102,20 @@ public class CategoryAnalytic {
         return resultList;
     }
 
-    public String orderRamAndCpu(MyProcess process){
-        List<MyProcess> allInCategory = getProcessesForCategory(process.getCategory());
-        double processRam = process.getUsageRamPercent();
-        double processCpu = process.getUsageCpuPercent();
+    public String orderRamAndCpu(MyProcess processCheck){
+        double processRam = processCheck.getUsageRamPercent();
+        double processCpu = processCheck.getUsageCpuPercent();
         int ramOrder = 1;
         int cpuOrder = 1;
-        for(MyProcess p : allInCategory){
-            if(p.getUsageCpuPercent() > processCpu){
-                cpuOrder++;
-            }
-            if(p.getUsageRamPercent() > processRam){
-                ramOrder++;
+        for(MyProcess myProcessIter : data.values()){
+            if (myProcessIter.getCategory() == processCheck.getCategory() && myProcessIter.getPid() != processCheck.getPid()){
+
+                if(myProcessIter.getUsageCpuPercent() > processCpu){
+                    cpuOrder++;
+                }
+                if(myProcessIter.getUsageRamPercent() > processRam){
+                    ramOrder++;
+                }
             }
         }
 
@@ -129,6 +132,26 @@ public class CategoryAnalytic {
             return allInCategory;
         } else {
             return allInCategory.subList(0, 10);
+        }
+
+    }
+
+    public void refreshTimeInProcessInfo(ConcurrentHashMap<Long, MyProcess> data , ConcurrentHashMap<String, MyProcessDto> initialCategories) {
+        for(long pidEl : data.keySet()){
+            if(data.get(pidEl) == null) continue;
+            MyProcessDto dto = initialCategories.get(data.get(pidEl).getName());
+            if (dto == null) {
+                MyProcessDto dtoToWriteInJson = new MyProcessDto();
+                dtoToWriteInJson.setOriginalName(data.get(pidEl).getName());
+                dtoToWriteInJson.setAliasName(data.get(pidEl).getAliasName());
+                dtoToWriteInJson.setCategory(data.get(pidEl).getCategory().name());
+                dtoToWriteInJson.setTrackingFreezed(data.get(pidEl).getFreezing());
+                dtoToWriteInJson.setTotalTimeSeconds(data.get(pidEl).getTimeActive());
+                initialCategories.put(data.get(pidEl).getName(), dtoToWriteInJson);
+                continue;
+            }
+            long time = Math.max(dto.getTotalTimeSeconds(), data.get(pidEl).getTimeActive());
+            dto.setTotalTimeSeconds(time);
         }
 
     }

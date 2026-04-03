@@ -6,24 +6,25 @@ import com.google.gson.GsonBuilder;
 import config.InitialJsonLoading;
 import config.LoadConfigFile;
 import config.WatchJson;
+import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import lombok.Getter;
+import model.Category;
 import model.JsonListProcessDTO;
 import model.MyProcess;
 import model.MyProcessDto;
 import oshi.SystemInfo;
 import scanner.ScannerSystem;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Getter
 public class ProcessRepository {
@@ -43,12 +44,13 @@ public class ProcessRepository {
     private final ForkJoinPool forkJoinPool = new ForkJoinPool();
 
     private volatile boolean flagWatchJson = true;
+    private final ReentrantReadWriteLock lockJson = new ReentrantReadWriteLock();;
 
     public ProcessRepository(LoadConfigFile loadConfigFile, ConcurrentHashMap<Long, MyProcess> data) {
         this.loadConfigFile = loadConfigFile;
         this.data = data;
         this.categoryAnalytic = new CategoryAnalytic(data);
-        this.initialJsonLoading = new InitialJsonLoading(loadConfigFile.getJsonFile());
+        this.initialJsonLoading = new InitialJsonLoading(loadConfigFile);
         this.initialCategories = initialJsonLoading.initialScanProcessJsonFile();
     }
 
@@ -58,7 +60,7 @@ public class ProcessRepository {
 
 
         /* POCETAK - Executor za posmatranje json fajla  */
-        WatchJson watchJson = new WatchJson(initialCategories);
+        WatchJson watchJson = new WatchJson(initialCategories, loadConfigFile, lockJson);
         executorJsonWatch.submit(() -> {
             while(flagWatchJson){
                 try {
@@ -83,7 +85,10 @@ public class ProcessRepository {
                         }
                         else{
                             MyProcess myProcess = data.get(pid);
-                            System.out.println(myProcess.getName() + " ;TimeActive: " + myProcess.getTimeActive() + " Category: " + myProcess.getCategory().name() + " CPU USAGE: " + myProcess.getUsageCpuPercent() + " RAM USAGE: "+ myProcess.getUsageRamPercent()); // TEST
+                            if (myProcess == null) {
+                                continue;
+                            }
+                            System.out.println(myProcess.getName() + " ;TimeActive: " + myProcess.getTimeActive() + " Category: " + myProcess.getCategory().name() + " CPU USAGE: " + myProcess.getUsageCpuPercent() + " RAM USAGE: "+ myProcess.getUsageRamPercent());
                             if(!myProcess.getFreezing()){
                                 myProcess.setTimeActive(myProcess.getTimeActive() + loadConfigFile.getIntervalProcess() / 1000);
                             }
@@ -100,15 +105,21 @@ public class ProcessRepository {
         schedulerCsvAnalyticPeriodic.scheduleWithFixedDelay(() -> {
             categoryAnalytic.sumTimeCategories();
             String writingText = categoryAnalytic.makeTextForCsv();
+
             executorCsvAnalytic.submit(() -> {
-                try (BufferedWriter bw = new BufferedWriter(new FileWriter("probaPeriodic.csv", true))) {
+                File file = new File(nameForSnap());
+                boolean flagForWritingTitle = !file.exists();
+                try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
+                    if (flagForWritingTitle) {
+                        bw.write("timestamp,pid,process_name,cpu_usage,ram_usage,category,alias_name\n");
+                    }
                     bw.write(writingText);
                 } catch (IOException e) {
                     // error handling
                 }
             });
 
-        }, 1, loadConfigFile.getSnapshotInterval(), TimeUnit.SECONDS);
+        }, loadConfigFile.getSnapshotInterval(), loadConfigFile.getSnapshotInterval(), TimeUnit.SECONDS);
         /* KRAJ - Executor za analystic modul i pisanje u csv fajl periodicno  */
         /* POCETAK - Executor za booked csv */
         for(String strTime : loadConfigFile.getSnapshotTimes()){
@@ -122,7 +133,12 @@ public class ProcessRepository {
                 categoryAnalytic.sumTimeCategories();
                 String writingText = categoryAnalytic.makeTextForCsv();
                 executorCsvAnalytic.submit(() -> {
-                    try (BufferedWriter bw = new BufferedWriter(new FileWriter("probaBooked.csv", true))) {
+                    File file = new File(nameForSnap());
+                    boolean flagForWritingTitle = !file.exists();
+                    try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
+                        if (flagForWritingTitle) {
+                            bw.write("timestamp,pid,process_name,cpu_usage,ram_usage,category,alias_name\n");
+                        }
                         bw.write(writingText);
                     } catch (IOException e) {
                         // error handling
@@ -144,116 +160,86 @@ public class ProcessRepository {
         this.data.remove(pid);
     }
 
-    // 1. IZMENJENA makeJsonChange (sada sinhronizuje vreme pre čuvanja)
     public void makeJsonChange() {
         executorJsonChange.submit(() -> {
-            // Prvo prekopiramo živo vreme iz memorije u DTO
-            for (MyProcess liveProcess : data.values()) {
-                MyProcessDto dto = initialCategories.get(liveProcess.getName());
-                if (dto != null) {
-                    dto.setTotalTimeSeconds(Math.max(dto.getTotalTimeSeconds(), liveProcess.getTimeActive()));
-                }
-            }
 
-            try (FileWriter writer = new FileWriter(loadConfigFile.getJsonFile())) {
-                Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                JsonListProcessDTO wrapper = new JsonListProcessDTO();
-                wrapper.setProcesses(new ArrayList<>(initialCategories.values()));
-                gson.toJson(wrapper, writer);
-            } catch (IOException e) {
-                System.err.println("GRESKA PRI UPISU U JSON: " + e.getMessage());
-            }
+            this.categoryAnalytic.refreshTimeInProcessInfo(data, initialCategories);
+            jsonWrite(new File(loadConfigFile.getJsonFile()));
+
         });
     }
+    private void jsonWrite(java.io.File targetFile) {
+        JsonListProcessDTO container = new JsonListProcessDTO();
+        container.setProcesses(new ArrayList<>(initialCategories.values()));
 
-    // 2. NOVA METODA: Čuvanje u izabrani fajl (za Save dugme)
+        Gson gsonParsing = new GsonBuilder().setPrettyPrinting().create();
+        lockJson.writeLock().lock();
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(targetFile))) {
+            gsonParsing.toJson(container, bw);
+        } catch (IOException error) {
+            System.err.println("GRESKA PRILIKOM UPISIVANJA U JSON!!! " + error.getMessage());
+        }finally {
+            lockJson.writeLock().unlock();
+        }
+    }
+
+
     public void saveToFileAsync(java.io.File targetFile) {
         executorJsonChange.submit(() -> {
-            for (MyProcess liveProcess : data.values()) {
-                MyProcessDto dto = initialCategories.get(liveProcess.getName());
-                if (dto != null) {
-                    dto.setTotalTimeSeconds(Math.max(dto.getTotalTimeSeconds(), liveProcess.getTimeActive()));
-                }
-            }
+            this.categoryAnalytic.refreshTimeInProcessInfo(data, initialCategories);
+            jsonWrite(targetFile);
 
-            try (FileWriter writer = new FileWriter(targetFile)) {
-                Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                JsonListProcessDTO wrapper = new JsonListProcessDTO();
-                wrapper.setProcesses(new ArrayList<>(initialCategories.values()));
-                gson.toJson(wrapper, writer);
-
-                javafx.application.Platform.runLater(() -> {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "File saved successfully!");
-                    alert.show();
-                });
-            } catch (IOException e) {
-                System.err.println("Greska pri cuvanju u fajl: " + e.getMessage());
-            }
+            Platform.runLater(() -> {
+                new Alert(Alert.AlertType.INFORMATION, "System: Data exported successfully!").show();
+            });
         });
     }
 
 
     public void saveStateSynchronouslyOnShutdown() {
-        for (MyProcess liveProcess : data.values()) {
-            MyProcessDto dto = initialCategories.get(liveProcess.getName());
-            if (dto != null) {
-                dto.setTotalTimeSeconds(Math.max(dto.getTotalTimeSeconds(), liveProcess.getTimeActive()));
-            }
-        }
-
-        try (FileWriter writer = new FileWriter(loadConfigFile.getJsonFile())) {
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            JsonListProcessDTO wrapper = new JsonListProcessDTO();
-            wrapper.setProcesses(new ArrayList<>(initialCategories.values()));
-            gson.toJson(wrapper, writer);
-        } catch (IOException e) {
-            System.err.println("Greška pri čuvanju podataka pred gašenje: " + e.getMessage());
-        }
+        this.categoryAnalytic.refreshTimeInProcessInfo(data, initialCategories);
+        jsonWrite(new File(loadConfigFile.getJsonFile()));
     }
 
 
-    public void loadFromFileAsync(java.io.File sourceFile) {
+    public void loadChosenFileFromGui(java.io.File sourceFile) {
         executorJsonChange.submit(() -> {
-            try (java.io.FileReader reader = new java.io.FileReader(sourceFile)) {
-                com.google.gson.Gson gson = new com.google.gson.Gson();
-                model.JsonListProcessDTO listDto = gson.fromJson(reader, model.JsonListProcessDTO.class);
+            try (FileReader reader = new FileReader(sourceFile)) {
+                Gson gson = new com.google.gson.Gson();
+                JsonListProcessDTO listDto = gson.fromJson(reader, JsonListProcessDTO.class);
 
                 if (listDto != null && listDto.getProcesses() != null) {
                     for (MyProcessDto loadedDto : listDto.getProcesses()) {
-                        String name = loadedDto.getOriginalName();
-
-                        // 1. Ažuriramo mapu pravila
-                        initialCategories.put(name, loadedDto);
-
-                        // 2. Ažuriramo tabelu
-                        for (MyProcess liveProcess : data.values()) {
-                            if (liveProcess.getName().equals(name)) {
-                                liveProcess.setFreezing(loadedDto.isTrackingFreezed());
-                                liveProcess.setAliasName(loadedDto.getAliasName());
-                                try {
-                                    liveProcess.setCategory(model.Category.valueOf(loadedDto.getCategory().toUpperCase()));
-                                } catch (Exception e) {
-                                    liveProcess.setCategory(model.Category.UNCATEGORIZED);
-                                }
-                                liveProcess.setTimeActive(liveProcess.getTimeActive() + loadedDto.getTotalTimeSeconds());
-                            }
-                        }
+                        setAttributesForLoad(loadedDto);
                     }
 
-                    // --- 3. KLJUČNO: Odmah prepiši process_info.json! ---
-                    // Pošto si osvežio initialCategories, sada to trajno snimi
                     makeJsonChange();
-                    // ----------------------------------------------------
 
-                    javafx.application.Platform.runLater(() -> {
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Configuration loaded successfully!");
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Thank you, Configuration loaded successfully :)");
                         alert.show();
                     });
                 }
             } catch (Exception e) {
-                System.err.println("Greska pri citanju iz fajla: " + e.getMessage());
+                System.err.println("GRESKAA pri citanju iz fajla: " + e.getMessage());
             }
         });
+    }
+    private void setAttributesForLoad(MyProcessDto loadedDto){
+        String procName = loadedDto.getOriginalName();
+        initialCategories.put(procName, loadedDto);
+        for (MyProcess myProcessIter : data.values()) {
+            if (myProcessIter.getName().equals(procName)) {
+                myProcessIter.setFreezing(loadedDto.isTrackingFreezed());
+                myProcessIter.setAliasName(loadedDto.getAliasName());
+                try {
+                    myProcessIter.setCategory(Category.valueOf(loadedDto.getCategory().toUpperCase()));
+                } catch (Exception e) {
+                    myProcessIter.setCategory(Category.UNCATEGORIZED);
+                }
+                myProcessIter.setTimeActive(loadedDto.getTotalTimeSeconds());
+            }
+        }
     }
 
     public void shutdownThreads(){
@@ -266,7 +252,12 @@ public class ProcessRepository {
         executorJsonChange.shutdown();
         forkJoinPool.shutdown();
     }
-
+    private String nameForSnap() {
+        // godina_mesec_dan_sat_minut_sekunda_stotinka
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss_SS");
+        String res = "snapshot_" + LocalDateTime.now().format(formatter) + ".csv";
+        return res;
+    }
 
 
 

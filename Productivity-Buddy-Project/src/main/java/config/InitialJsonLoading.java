@@ -12,16 +12,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class InitialJsonLoading {
     private ConcurrentHashMap<String, MyProcessDto> specifyCategory; // key mi je name od procesa, a value category
-    private String jsonPath;
-
-    public InitialJsonLoading(String jsonPath) {
+    private final LoadConfigFile loadConfigFile;
+    public InitialJsonLoading(LoadConfigFile loadConfigFile) {
         this.specifyCategory = new ConcurrentHashMap<>();
-        this.jsonPath = jsonPath;
+        this.loadConfigFile = loadConfigFile;
     }
 
 
     public ConcurrentHashMap<String, MyProcessDto> initialScanProcessJsonFile(){
-        try (FileReader reader = new FileReader("src/process_info.json")) {
+        try (FileReader reader = new FileReader(this.loadConfigFile.getJsonFile())) {
             Gson gson = new Gson();
             JsonListProcessDTO listDto = gson.fromJson(reader, JsonListProcessDTO.class);
             for(MyProcessDto myProcessDto : listDto.getProcesses()){

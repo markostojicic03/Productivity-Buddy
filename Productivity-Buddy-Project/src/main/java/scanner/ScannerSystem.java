@@ -36,7 +36,7 @@ public class ScannerSystem extends RecursiveAction {
             name = cutString(name);
             long startingTime = process.info().startInstant().orElse(Instant.now()).toEpochMilli();
 
-            // -------------------------
+
             Category category = Category.UNCATEGORIZED;
             String alias = name;
             boolean isFreezed = false;
@@ -51,7 +51,7 @@ public class ScannerSystem extends RecursiveAction {
                 alias = dto.getAliasName();
                 isFreezed = dto.isTrackingFreezed();
             }
-            // ------------------------------------------------------------------
+
 
             double numCpu = 0;
             double numRam = 0;
@@ -89,13 +89,8 @@ public class ScannerSystem extends RecursiveAction {
         return lastInd == -1 ? name : name.substring(lastInd + 1);
     }
 
-    /// IZMENITI DA SE NE DELI UVEK NA PO 2 CUNKA NEGO DA MOZE I NA VISE (PROIZVOLJAN BROJ)
 
 
-    /**
-     * Za definisanje compute funkcije sam se ugledao na nacin na koji smo to radili na vezbama 3, naravno postoji razlika u odnosu na primeru
-     * koji smo tada radili jer ja ovde ne vracam vrednost kao u primeru za proste brojeve, vec samo konstantno dodajem elementu u mapu.
-     * */
     @Override
     protected void compute() {
         int n = processes.size();

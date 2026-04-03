@@ -10,46 +10,57 @@ import model.MyProcessDto;
 import java.io.FileReader;
 import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class WatchJson {
     private final ConcurrentHashMap<String, MyProcessDto> startSpecifyCategory;
+    private final LoadConfigFile loadConfigFile;
+    private final ReentrantReadWriteLock lockJson;
 
-    public WatchJson(ConcurrentHashMap<String, MyProcessDto> startSpecifyCategory) {
+    public WatchJson(ConcurrentHashMap<String, MyProcessDto> startSpecifyCategory, LoadConfigFile loadConfigFile, ReentrantReadWriteLock lockJson ) {
         this.startSpecifyCategory = startSpecifyCategory;
+        this.loadConfigFile = loadConfigFile;
+        this.lockJson = lockJson;
     }
 
 
 
     public void jsonSpy(ConcurrentHashMap<Long, MyProcess> data) {
-        try (FileReader reader = new FileReader("src/process_info.json")) {
+        lockJson.readLock().lock();
+        try (FileReader reader = new FileReader(loadConfigFile.getJsonFile())) {
             Gson gson = new Gson();
-            JsonListProcessDTO listDto = gson.fromJson(reader, JsonListProcessDTO.class);
-
-            for (MyProcessDto myProcessDtoUpdateVal : listDto.getProcesses()) {
+            JsonListProcessDTO dtoListFromJson = gson.fromJson(reader, JsonListProcessDTO.class);
+            if (dtoListFromJson == null || dtoListFromJson.getProcesses() == null) {
+                return;
+            }
+            for (MyProcessDto myProcessDtoUpdateVal : dtoListFromJson.getProcesses()) {
                 String name = myProcessDtoUpdateVal.getOriginalName();
                 MyProcessDto prevDto = startSpecifyCategory.get(name);
 
                 if (prevDto == null || !prevDto.equals(myProcessDtoUpdateVal)) {
-
-
                     startSpecifyCategory.put(name, myProcessDtoUpdateVal);
-
-                    for (MyProcess liveProcess : data.values()) {
-                        if (liveProcess.getName().equals(name)) {
-                            liveProcess.setFreezing(myProcessDtoUpdateVal.isTrackingFreezed());
-                            liveProcess.setAliasName(myProcessDtoUpdateVal.getAliasName());
-                            try {
-                                liveProcess.setCategory(Category.valueOf(myProcessDtoUpdateVal.getCategory().toUpperCase()));
-                            } catch (Exception e) {
-                                liveProcess.setCategory(Category.UNCATEGORIZED);
-                            }
-                            liveProcess.setTimeActive(myProcessDtoUpdateVal.getTotalTimeSeconds());
-                        }
-                    }
+                    setValsForMyProcess(data, name, myProcessDtoUpdateVal);
                 }
             }
         } catch (Exception e) {
-            System.out.println("JSONSPY - ERROR!");
+            System.out.println("JSONSPY ERROR!");
+        }finally {
+            lockJson.readLock().unlock();
+        }
+    }
+    private void setValsForMyProcess(ConcurrentHashMap<Long, MyProcess> data, String name, MyProcessDto myProcessDtoUpdate) {
+
+        for (MyProcess myProcessIter : data.values()) {
+            if (myProcessIter.getName().equals(name)) {
+                myProcessIter.setFreezing(myProcessDtoUpdate.isTrackingFreezed());
+                myProcessIter.setAliasName(myProcessDtoUpdate.getAliasName());
+                try {
+                    myProcessIter.setCategory(Category.valueOf(myProcessDtoUpdate.getCategory().toUpperCase()));
+                } catch (Exception e) {
+                    myProcessIter.setCategory(Category.UNCATEGORIZED);
+                }
+                myProcessIter.setTimeActive(myProcessDtoUpdate.getTotalTimeSeconds());
+            }
         }
     }
 
